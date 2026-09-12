@@ -1,0 +1,28 @@
+{
+  "title": "Information-geometric monitoring network design for the Fushe-Kuqe alluvial aquifer: code and data",
+  "upload_type": "software",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "Zeqiraj, Dulian",
+      "affiliation": "Department of Energy Resources, Faculty of Geology and Mining, Polytechnic University of Tirana, Albania",
+      "orcid": "0000-0002-5305-3048"
+    }
+  ],
+  "keywords": [
+    "optimal experimental design",
+    "Fisher information",
+    "groundwater monitoring network",
+    "effective porosity",
+    "DRASTIC vulnerability",
+    "alluvial aquifer",
+    "Albania",
+    "Mississippi River Valley alluvial aquifer"
+  ],
+  "related_identifiers": [
+    {"identifier": "10.1016/j.jconhyd.2026.105086", "relation": "isSupplementedBy", "scheme": "doi"},
+    {"identifier": "10.1016/j.hazadv.2026.101261", "relation": "isSupplementedBy", "scheme": "doi"},
+    {"identifier": "10.3133/sir20235101", "relation": "isDerivedFrom", "scheme": "doi"},
+    {"identifier": "10.12681/bgsg.11772", "relation": "isDerivedFrom", "scheme": "doi"}
+  ]
+}

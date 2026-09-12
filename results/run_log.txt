@@ -1,0 +1,184 @@
+    ----------------------------------------------------
+	Your license will expire in 5 days.
+	Please contact your system administrator or
+	go to MathWorks.com to renew this license.
+    ----------------------------------------------------
+
+	Trial License -- for use to evaluate programs for possible purchase as an end-user only.
+
+
+===== 1. data =====
+[load] wells total 180, inside 131, with K 43, with NO3 31
+[load] inside with K 32, inside with NO3 24, boundary vertices 3411
+[load] facies coarse  : 13 wells with K
+[load] facies medium  : 22 wells with K
+[load] facies fine    : 8 wells with K
+[load] K  range 50 - 200 m/day, mean 130.7, sd 59.7
+[load] NO3 range 1.38 - 24.74 mg/L, mean 6.96, sd 6.23
+[load] DRASTIC range 87 - 189, mean 136.69, sd 23.53 (n = 180)
+
+===== 2. is the nitrate field predictable at all =====
+[pred] leave-one-out inverse distance, power 1 : R2 = -0.110
+[pred] leave-one-out inverse distance, power 2 : R2 = -0.612
+[pred] leave-one-out inverse distance, power 3 : R2 = -0.744
+[pred] leave-one-out ordinary kriging, range   1000 m : R2 = -0.209
+[pred] leave-one-out ordinary kriging, range   2000 m : R2 = -0.275
+[pred] leave-one-out ordinary kriging, range   4000 m : R2 = -0.271
+[pred] leave-one-out ordinary kriging, range   8000 m : R2 = -0.199
+[pred] leave-one-out ordinary kriging, range  16000 m : R2 = -0.108
+[pred] leave-one-out linear on X,Y                    : R2 = +0.159
+[pred] leave-one-out linear on X,Y,DRASTIC            : R2 = +0.041
+[pred] leave-one-out linear on X,Y,DRASTIC,K,depth    : R2 = -0.004
+[pred] leave-one-out linear on DRASTIC                : R2 = -0.188
+[pred] leave-one-out linear on depth to water         : R2 = -0.039
+[pred] nitrate correlates with northing -0.55, easting +0.36, along-flow +0.58
+[pred] nitrate correlates with DRASTIC +0.12, K -0.24, depth to water -0.30
+[pred] best leave-one-out R2 achieved by any of these methods: +0.159
+
+===== 3. grid and prior =====
+[grid] flow azimuth 225 deg, rotated grid 474 x 389 cells of 100 m
+[grid] 34887 active cells, discretised area 348.87 km2 (polygon 349.09 km2, difference 0.06%)
+[prior] facies coarse  n=13  K  50-200  mean 138.5 sd 48.1 m/day
+[prior] facies medium  n=22  K  50-200  mean 135.0 sd 59.3 m/day
+[prior] facies fine    n= 8  K  50-200  mean 106.2 sd 77.6 m/day
+[prior] one-way ANOVA of K on the lithology label: eta^2 = 0.0398, F(2,40) = 0.830, p = 0.443
+[prior] prior mean from log10 K: 0.2503 - 0.3027, network mean 0.2820
+[prior] sd under independence 0.0324 ; correlation-aware 0.0347 0.0375 0.0402
+[prior] prior sd used 0.0375 (rho = 0.35), inflation over IV 15.6%
+[prior] exponential variogram on log10 K: nugget 0.0000, partial sill 0.0590, range 2057 m
+[prior] gridded porosity 0.2502 - 0.3033 (mean 0.2806)
+[prior] gridded DRASTIC  86.8 - 189.5 (mean 138.4), from 180 wells
+[prior] KL basis: 150 modes, 78.0% of the prior variance
+
+===== 4. forward model and calibration =====
+[fwd] mean measured K 130.7 m/day, published mean seepage velocity 2.1 m/day
+[fwd] implied regional gradient 4.531e-03, uniform Darcy flux 0.5922 m/day
+[fwd] DRASTIC dispersion amplifier Gamma in [1.00, 1.50]
+[fwd] interior faces: 34171 along flow, 34214 across flow
+[cal] 24 observation wells inside the domain, max well-to-cell 64 m
+[cal] null model with the loading shaped as DRASTIC^kappa: best R2 0.037 at kappa 1.00, T0 200 d
+[cal] 7 source-basis marches of 400 steps in 43 s
+[cal] onset time T0 = 7000 d (19.2 yr), RMSE 4.422 mg/L, R2 0.492, adjusted R2 0.221
+[cal]   beta(1        ) = -8.9120e-04
+[cal]   beta(xi       ) = +8.5929e-03
+[cal]   beta(eta      ) = -6.9027e-03
+[cal]   beta(xi^2     ) = -3.9578e-03
+[cal]   beta(eta^2    ) = -8.4456e-03
+[cal]   beta(xi*eta   ) = +1.5474e-02
+[cal]   beta(V_DRASTIC) = +2.9406e-03
+[cal] fitted loading -5.075e-03 to 6.144e-03 mg/L/d, negative over 35.0% of the domain
+[cal] non-negative loading: T0 5400 d (14.8 yr), RMSE 4.464 mg/L, R2 0.482
+[cal] modelled nitrate 0.00 - 32.19 mg/L (observed 1.38 - 24.74)
+[cal] dropping the DRASTIC column changes R2 from 0.492 to 0.460 (partial contribution 0.032)
+[cal] leave-one-out: RMSE 6.319 mg/L, R2 -0.037
+
+===== 5. sensitivity and Fisher information =====
+[sens] 150 KL modes, 27 time steps to T0 = 5400 d
+[sens] base field at T0: 0.000 - 32.188 mg/L
+[sens] mode 25/150, 11 s elapsed
+[sens] mode 50/150, 22 s elapsed
+[sens] mode 75/150, 34 s elapsed
+[sens] mode 100/150, 46 s elapsed
+[sens] mode 125/150, 58 s elapsed
+[sens] mode 150/150, 69 s elapsed
+[sens] Jacobian built in 69 s
+[sens] finite-difference check on mode 3, step 3.404e-01: relative difference 9.642e-03
+[sens] finite-difference check on mode 3, step 6.808e-02: relative difference 1.930e-03
+[sens] finite-difference check on mode 3, step 1.362e-02: relative difference 3.861e-04
+[sens] residual falls with step as a power of 1.00 (first order is 1)
+[sens] degrees of freedom for signal 0.0753 out of 150 modes, so the observations constrain the equivalent of 0.0753 directions
+[sens] Fisher trace: prior 1.647e+03 (100.0%), observations 8.319e-02 (0.0%)
+[sens] log|I_total| - log|I_prior| = 0.076, so the 24 nitrate wells carry 0.038 nats
+[sens] mean prior sd in the KL subspace 0.03309 -> posterior 0.03304 (0.2% reduction)
+
+===== 6. monitoring network design =====
+[design] vulnerability-weighted mean residual travel time 8216 d (22.5 yr)
+[design] information horizon at 90% of kernel mass: 6815 - 10504 m (median 7500 m), against a variogram range of 2057 m
+[design] unconstrained greedy D-optimal spreads its 5 wells over 283 m; minimum separation set to 2057 m
+[design] D-optimal sequence:
+   1: x 4382518 y 4614117  DRASTIC 128  logdet gain 0.0536  Var(g) 5.959e+04 -> sd(g) 244.1 d
+   2: x 4384922 y 4610298  DRASTIC 128  logdet gain 0.0441  Var(g) 5.876e+04 -> sd(g) 242.4 d
+   3: x 4383083 y 4605631  DRASTIC 121  logdet gain 0.0402  Var(g) 5.824e+04 -> sd(g) 241.3 d
+   4: x 4384073 y 4615531  DRASTIC 128  logdet gain 0.0376  Var(g) 5.751e+04 -> sd(g) 239.8 d
+   5: x 4384356 y 4607329  DRASTIC 120  logdet gain 0.0299  Var(g) 5.708e+04 -> sd(g) 238.9 d
+[design] G-optimal sequence:
+   1: x 4382800 y 4614117  DRASTIC 127  logdet gain 0.0532  Var(g) 5.958e+04 -> sd(g) 244.1 d
+   2: x 4384922 y 4610298  DRASTIC 128  logdet gain 0.0441  Var(g) 5.876e+04 -> sd(g) 242.4 d
+   3: x 4384285 y 4615602  DRASTIC 128  logdet gain 0.0355  Var(g) 5.806e+04 -> sd(g) 241.0 d
+   4: x 4385487 y 4612278  DRASTIC 127  logdet gain 0.0274  Var(g) 5.754e+04 -> sd(g) 239.9 d
+   5: x 4383083 y 4605631  DRASTIC 121  logdet gain 0.0401  Var(g) 5.703e+04 -> sd(g) 238.8 d
+[design] sd of the vulnerability-weighted arrival time: 246.3 d before augmentation
+[design] after 5 wells: D-optimal 238.9 d, goal-oriented 238.8 d (0.0% better)
+[design] mean DRASTIC at the chosen sites: D-optimal 125.1, goal-oriented 126.4 (domain mean 138.4)
+[design] median distance between the two designs 224 m
+[design] maximum pairwise information correlation: unconstrained 1.000, at one variogram range 0.977, at one information horizon 0.696
+[design] best single observation reduces Var(g) by 1065 d^2 (concentration) vs 1.135e+04 d^2 (pumping test)
+[design] information equivalence factor R = 0.094 (concentration observations per pumping test)
+
+===== 7. the same design with a local operator =====
+[local] Fushe-Kuqe, local operator: variance of the weighted mean down 3.1% (D) and 30.7% (goal); median separation 7852 m
+
+===== 8. posterior sampling =====
+[part] Gauss-Newton MAP reached in 12 iterations, F = 238.9159
+[part] condition number of the Gauss-Newton Hessian 6.271e+01
+[part] descent to a relative Riemannian gradient of 1e-06: [part] SIR from the prior with M = 500: normalised ESS 0.719
+[part] 676 forward transport solves in total
+
+===== 9. independent[part] SIR from the prior with M = 500: normalised ESS 0.719
+[part] 676 forward transport solves in total
+
+===== 9. independent replication on the USGS MRVA set =====
+[mrva] 44 wells, all DRASTIC indices reproduce from their ratings
+[mrva] K 0.91 - 122.2 m/day (mean 29.5, sd 23.6); DRASTIC 115 - 187 (mean 160.6)
+[mrva] exponential variogram on log10 K: nugget 0.1622, sill 0.0501, range 23673 m
+[mrva] convex hull of the wells: 32400 cells of 1000 m, 32400 km2
+[mrva] kriged DRASTIC 142.5 - 167.4 (mean 160.5)
+[mrva] KL basis: 150 modes, 82.3% of the prior variance
+[mrva] variance of the vulnerability-weighted mean reduced by 16.8% (D-optimal) and 50.4% (goal-oriented)
+[mrva] goal-oriented design leaves 40.4% less residual variance than D-optimal; median separation 59506 m
+[mrva] mean DRASTIC at chosen sites: D-optimal 159.2, goal-oriented 160.2
+
+===== 10. sensitivity of the conclusions =====
+[sweep] sigma_obs 0.5 mg/L : observation share of the Fisher trace 2.02e-04, R = 0.329
+[sweep] sigma_obs 1.0 mg/L : observation share of the Fisher trace 5.05e-05, R = 0.094
+[sweep] sigma_obs 1.5 mg/L : observation share of the Fisher trace 2.24e-05, R = 0.043
+[sweep] sigma_obs 2.0 mg/L : observation share of the Fisher trace 1.26e-05, R = 0.024
+[sweep] pumping-test relative error 0.05 : R = 0.093
+[sweep] pumping-test relative error 0.10 : R = 0.094
+[sweep] pumping-test relative error 0.15 : R = 0.095
+[sweep] pumping-test relative error 0.20 : R = 0.097
+[sweep] gamma_V 0.0 : median separation 141 m, goal-oriented advantage 0.1%, mean DRASTIC at sites 126.3
+[sweep] gamma_V 0.5 : median separation 200 m, goal-oriented advantage 0.0%, mean DRASTIC at sites 126.5
+[sweep] gamma_V 1.0 : median separation 200 m, goal-oriented advantage 0.1%, mean DRASTIC at sites 126.5
+[sweep] gamma_V 1.5 : median separation 224 m, goal-oriented advantage 0.1%, mean DRASTIC at sites 126.4
+[sweep] gamma_V 2.0 : median separation 224 m, goal-oriented advantage 0.1%, mean DRASTIC at sites 126.4
+[sweep] gamma_V 3.0 : median separation 224 m, goal-oriented advantage 0.1%, mean DRASTIC at sites 126.4
+[sweep] alphaL  100 m : observation share 1.98e-05, R = 0.276, median separation 0 m
+[sweep] alphaL  250 m : observation share 3.13e-05, R = 0.168, median separation 0 m
+[sweep] alphaL  500 m : observation share 5.05e-05, R = 0.094, median separation 224 m
+[sweep] alphaL 1000 m : observation share 9.95e-05, R = 0.049, median separation 300 m
+[out] results/results.json written (10384 characters)
+
+finished in 1441 s
+
+ans = 
+
+  struct with fields:
+
+               cfg: [11 struct]
+                 D: [11 struct]
+                Pr: [11 struct]
+                 G: [11 struct]
+                 P: [11 struct]
+                 F: [11 struct]
+               Cal: [11 struct]
+                 S: [11 struct]
+               Des: [11 struct]
+               Loc: [11 struct]
+               Par: [11 struct]
+                 M: [11 struct]
+                Sw: [11 struct]
+         runtime_s: 1.4413e+03
+    matlab_version: '26.1.0.3346908 (R2026a) Update 5'
+          run_date: '2026-09-12 13:27:04'
+

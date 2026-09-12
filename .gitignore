@@ -1,0 +1,4 @@
+results/run_all.mat
+results/stage_*.mat
+*.asv
+*.autosave
