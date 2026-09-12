@@ -3,8 +3,8 @@ function fk_verify_docx(docx)
 %
 %  Six checks, each of which has caught something at least once:
 %
-%    1. Nothing but the MATLAB listings follows the reference list.  That is
-%       the one structural requirement the document has.
+%    1. The reference list is the last thing in the document.  The MATLAB
+%       code lives in the repository, not in the paper.
 %    2. No unresolved {{placeholder}} survived into the file.
 %    3. No em dash anywhere.
 %    4. No control character anywhere.  This check exists because one reached
@@ -12,8 +12,8 @@ function fk_verify_docx(docx)
 %       $\alpha_L$ into the word "lpha", and the converter dropped it in
 %       silence.
 %    5. No stray dollar sign, which is what an unconverted equation leaves.
-%    6. Every listing in the appendix matches the file on disk, compared by
-%       the SHA-256 prefix printed beside it.
+%    6. No code listing is present, so the pipeline cannot creep back into
+%       the manuscript unnoticed.
 %    7. Every figure caption has a picture above it.  This check exists
 %       because the first builds carried the captions and none of the
 %       figures, and nothing in the document said so.
@@ -31,27 +31,26 @@ end
 fails = {};
 
 % ---- 1. structure ---------------------------------------------------------
+% The reference entries follow the References heading, as they must.  What
+% must not follow is another section: the MATLAB code used to be printed here
+% and now lives in the repository instead.
 iref = find(strcmpi(strtrim(paras), 'references'), 1);
-iapp = find(startsWith(lower(strtrim(paras)), 'appendix a'), 1);
 if isempty(iref)
     fails{end+1} = 'no References heading';
-elseif isempty(iapp)
-    fails{end+1} = 'no Appendix A heading';
-elseif iapp < iref
-    fails{end+1} = 'the appendix precedes the references';
 else
-    fprintf(['[verify] %d paragraphs, references at %d, appendix at %d, ' ...
-             '%d after it\n'], numel(paras), iref, iapp, ...
-            numel(paras) - iapp);
+    later = find(strncmp(styles(iref+1:end), 'Heading', 7), 1);
+    nrefs = numel(paras) - iref;
+    if ~isempty(later)
+        fails{end+1} = sprintf('a section follows the references: "%s"', ...
+            paras{iref + later}(1:min(60, end)));
+    end
+    fprintf(['[verify] %d paragraphs, references at %d, %d entries after it, ' ...
+             'no later section\n'], numel(paras), iref, nrefs);
 end
 
-% The prose checks below apply to the paper, not to the code listings, which
-% legitimately contain dollar signs and any character a MATLAB file may hold.
-if ~isempty(iapp)
-    prose = strjoin(paras(1:iapp), newline);
-else
-    prose = text;
-end
+% With the listings gone, every paragraph is prose and every check applies to
+% all of it.
+prose = text;
 
 % ---- 2. placeholders ------------------------------------------------------
 ph = regexp(prose, '\{\{\w+\}\}', 'match');
@@ -83,28 +82,12 @@ if nd > 0
         prose(max(1, j-50):min(numel(prose), j+30)));
 end
 
-% ---- 6. listings match the code -------------------------------------------
-cfg = fk_config();
-tok = regexp(text, '([A-Za-z0-9_]+\.m)\s+(\d+)\s+([0-9a-f]{16})', 'tokens');
-nchk = 0;
-for k = 1:numel(tok)
-    name = tok{k}{1};
-    dg = tok{k}{3};
-    path = fullfile(cfg.dir_code, name);
-    if ~exist(path, 'file')
-        fails{end+1} = ['listed file not on disk: ' name]; %#ok<AGROW>
-        continue
-    end
-    real = fk_sha256(path);
-    if ~strcmp(real, dg)
-        fails{end+1} = sprintf('listing out of date: %s (document %s, disk %s)', ...
-                               name, dg, real); %#ok<AGROW>
-    end
-    nchk = nchk + 1;
-end
-fprintf('[verify] %d listing checksums checked\n', nchk);
-if nchk == 0
-    fails{end+1} = 'no listing checksums found';
+% ---- 6. no code listing in the document -----------------------------------
+ncode = sum(strcmp(styles, 'SourceCode'));
+fprintf('[verify] %d code paragraphs (expected 0)\n', ncode);
+if ncode > 0
+    fails{end+1} = sprintf(['%d code listing paragraph(s) in the document; ' ...
+        'the pipeline belongs in the repository'], ncode);
 end
 
 % ---- 7. figures present ---------------------------------------------------

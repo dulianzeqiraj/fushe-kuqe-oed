@@ -370,7 +370,7 @@ The complete package, comprising the field data in flat form, the MATLAB pipelin
 - GitHub: https://github.com/dulianzeqiraj/fushe-kuqe-oed
 - Zenodo (archived release): https://doi.org/10.5281/zenodo.22726726
 
-One command reproduces everything reported here. The primary sources are cited in Section 2.
+One command reproduces everything reported here. The pipeline is not printed in this paper: it is twenty-seven MATLAB files, and a reader is better served by running them than by reading them set in a column. The primary sources are cited in Section 2.
 
 ## 11. Declaration of competing interests
 

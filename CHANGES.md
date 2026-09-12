@@ -7,6 +7,12 @@ The file this package replaces is
 It has not been modified. It is used only as the style reference for the new
 document, so the page setup, fonts and named paragraph styles carry over.
 
+Its name asked for the MATLAB code to follow the references. It did, through
+v1.0.2. From v1.0.3 the code is in the repository only: the manuscript is
+twenty-one pages of paper rather than a hundred of listing, and the Data
+Availability section says where the pipeline is. `fk_verify_docx.m` now fails
+if a code listing reappears in the document.
+
 ## Why the draft could not be polished into a submission
 
 Five things were found on inspection, each checked rather than assumed.

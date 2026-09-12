@@ -92,7 +92,7 @@ the file on disk.
 
 | File | What it is |
 |---|---|
-| `manuscript/Zeqiraj_FusheKuqe_OED_manuscript.docx` | the manuscript, listings after the references |
+| `manuscript/Zeqiraj_FusheKuqe_OED_manuscript.docx` | the manuscript, figures embedded, ending at the references |
 | `manuscript/Highlights.docx` | the five highlights |
 | `manuscript/Cover_Letter.docx` | the cover letter |
 | `figures/fig1..fig7.tif` | figures at 600 dpi |
