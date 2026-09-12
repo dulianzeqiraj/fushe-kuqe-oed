@@ -1,7 +1,7 @@
 {
-  "run_date": "2026-09-12 13:27:04",
+  "run_date": "2026-09-12 15:31:17",
   "matlab_version": "26.1.0.3346908 (R2026a) Update 5",
-  "runtime_s": 1441.3458173,
+  "runtime_s": 959.1813568,
   "seed": 2.0260912E+7,
   "data": {
     "n_wells_total": 180,

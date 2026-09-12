@@ -93,9 +93,13 @@ argument is about what to measure next rather than about fitting what exists.
 ## Verification built into the package
 
 - `run_all.m` writes `results/results.json`; nothing else may be quoted.
-- `fill_manuscript.py` refuses to produce the manuscript if any `{{placeholder}}`
+- The whole chain is MATLAB. The document is written as WordprocessingML
+  by `fk_md2docx.m`, with the equations converted to Office MathML by
+  `fk_latex2omml.m`, so they stay editable in Word. There is no Python and
+  no pandoc.
+- `fk_fill_manuscript.m` refuses to produce the manuscript if any `{{placeholder}}`
   has no value in that file, and lists values computed but never cited.
-- `verify_docx.py` checks that nothing but the MATLAB listings follows the
+- `fk_verify_docx.m` checks that nothing but the MATLAB listings follows the
   references, that no placeholder survived, that there is no em dash, and that
   each listing's SHA-256 prefix matches the file on disk.
 - `fk_sensitivity.m` compares its analytic Jacobian against finite differences
@@ -105,6 +109,27 @@ argument is about what to measure next rather than about fitting what exists.
 - Every reference DOI was resolved against Crossref before it entered the list.
   Two entries have no DOI: Fedorov (1972), verified in Open Library, and
   Krause et al. (2008), verified at jmlr.org.
+
+## One defect that reached a delivered document, and the check that now catches it
+
+The first build of this manuscript, committed as eecb296 and pushed, contained
+`$lpha_L$` where it should have read an equation. A stray byte had entered the
+markdown during an edit: `lpha` became a BEL control character followed by
+"lpha". The converter in use at the time dropped the byte without complaining
+and the text reached print as a word.
+
+Two things changed because of it. `fk_fill_manuscript.m` now refuses to write a
+manuscript containing any control character, and `fk_verify_docx.m` checks the
+finished document for control characters and for stray dollar signs, the latter
+being what an unconverted equation leaves behind. Both checks are in the
+listings; neither existed when the defect shipped.
+
+## Provenance of manuscript/template.docx
+
+The template carries the styles, numbering, theme and page setup and no content.
+It was made by `fk_make_template.m` from the first build of this manuscript,
+which in turn took its styles from the author's original draft. Nothing in the
+scientific content passes through it.
 
 ## Two dates to be aware of
 

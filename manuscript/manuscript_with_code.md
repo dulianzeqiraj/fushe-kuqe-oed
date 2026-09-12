@@ -146,7 +146,7 @@ truncated at $m =$ 150 modes holding 78 per cent of the prior variance, the basi
 
 ### 4.2 Why porosity is invisible at steady state
 
-The domain is discretised on a grid aligned with the regional flow azimuth, which makes the dispersion tensor diagonal in grid coordinates and removes the cross-derivative terms. The grid has 389 by 474 cells of 100 m with 34887 active, covering 348.9 km² against 349.1 km² for the digitised polygon. Advection is first-order upwind, whose numerical dispersion is equivalent to a dispersivity of half a cell, 50 m, or a tenth of the baseline $lpha_L$. The dispersivity sweep of Section 6.8 spans several times that error, so the conclusions do not rest on the discretisation.
+The domain is discretised on a grid aligned with the regional flow azimuth, which makes the dispersion tensor diagonal in grid coordinates and removes the cross-derivative terms. The grid has 389 by 474 cells of 100 m with 34887 active, covering 348.9 km² against 349.1 km² for the digitised polygon. Advection is first-order upwind, whose numerical dispersion is equivalent to a dispersivity of half a cell, 50 m, or a tenth of the baseline $\alpha_L$. The dispersivity sweep of Section 6.8 spans several times that error, so the conclusions do not rest on the discretisation.
 
 The gradient is not measurable from the workbook and is derived from the published mean seepage velocity of 2.1 m d⁻¹ and the measured mean conductivity, $i = v\bar{n}_e/\bar{K} =$ 4.53e-03, giving a uniform regional Darcy flux $q_0 =$ 0.5922 m d⁻¹. The depth-averaged transport equation is
 
@@ -449,7 +449,6 @@ The listings below are the complete pipeline, in the order it runs them. They ar
 
 | File | Lines | SHA-256 prefix |
 |---|---|---|
-| `prepare_data.py` | 130 | `0384b784b5083146` |
 | `fk_config.m` | 122 | `799015aecd71adef` |
 | `fk_load_data.m` | 63 | `2636d95be48a3679` |
 | `fk_predictability.m` | 106 | `4be119fd350eebb9` |
@@ -465,143 +464,20 @@ The listings below are the complete pipeline, in the order it runs them. They ar
 | `fk_sweep.m` | 145 | `00194ccd2cfa0411` |
 | `fk_write_results.m` | 203 | `14dda76387c28cdf` |
 | `fk_figures.m` | 291 | `4d79a9be94d6296a` |
+| `fk_prepare_data.m` | 154 | `d70f3c35185694d8` |
+| `fk_fill_manuscript.m` | 363 | `4ecaff890d0ead90` |
+| `fk_latex2omml.m` | 369 | `1c63f0bdb804d970` |
+| `fk_xmlesc.m` | 9 | `f33903379adb07d1` |
+| `fk_check_omml.m` | 48 | `0aaec357da997185` |
+| `fk_md2docx.m` | 305 | `0c7fb33ead18c453` |
+| `fk_zip_replace.m` | 91 | `0f13f458e8c3562c` |
+| `fk_make_template.m` | 48 | `ee75001a80342d54` |
+| `fk_build_docx.m` | 96 | `492467fda49b3b09` |
+| `fk_verify_docx.m` | 150 | `afd10246b7fd16b2` |
+| `fk_sha256.m` | 18 | `c475d86ff2bf570f` |
 | `run_all.m` | 65 | `86ba7b72db52e4f4` |
 
-### A.1  `prepare_data.py`
-
-```python
-"""prepare_data.py
-Extract the analysis tables from the primary field workbook and from the USGS
-MRVA file into flat CSVs that the MATLAB pipeline reads.
-
-Inputs (read-only, never modified):
-  Fushe_Kuqe_All_Data.xlsx      the Desktop copy, which carries three sheets
-                                transcribed from Cenameri & Beqiraj (2016)
-                                in addition to the well and boundary tables
-  Pugh2023_MRVA_44wells_REAL.csv
-
-Outputs (written into ../data):
-  wells_all.csv        180 wells, every column of sheet 2
-  wells_K.csv          the 43 wells carrying a pumping-test K
-  wells_NO3.csv        the 31 wells carrying a nitrate measurement
-  boundary.csv         3411 aquifer boundary vertices
-  swi_chemistry.csv    4 wells, major ions, Cenameri & Beqiraj (2016) Table 1
-  swi_cl_trend.csv     chloride 1984/1999/2001 at wells 341 and 503, Table 2
-  swi_facts.csv        flow direction, heads, thicknesses, wedge geometry
-  mrva_44.csv          the USGS Mississippi River Valley alluvial set
-
-No value is altered, imputed or rounded here: rows are copied or dropped only.
-"""
-import csv
-import json
-import os
-import sys
-
-import openpyxl
-
-HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.abspath(os.path.join(HERE, '..', 'data'))
-
-XLSX = r'C:/Users/d_zeq/OneDrive/Desktop/Fushe_Kuqe_All_Data.xlsx'
-MRVA = (r'C:/Users/d_zeq/OneDrive/Desktop/PROJEKTE 2 ARTIKUJ/'
-        r'AKUIFER TE DHENA TE NDRYSHME FUSHE KUQE TE DHENA/'
-        r'Pugh2023_MRVA_44wells_REAL.csv')
-
-
-def sheet_rows(wb, name):
-    ws = wb[name]
-    rows = [list(r) for r in ws.iter_rows(values_only=True)]
-    return rows
-
-
-def write_csv(path, header, rows):
-    with open(path, 'w', newline='', encoding='utf-8') as f:
-        w = csv.writer(f)
-        w.writerow(header)
-        for r in rows:
-            w.writerow(['' if v is None else v for v in r])
-    return len(rows)
-
-
-def main():
-    os.makedirs(OUT, exist_ok=True)
-    wb = openpyxl.load_workbook(XLSX, read_only=True, data_only=True)
-
-    rows = sheet_rows(wb, '2_All_Wells')
-    header = [str(h) for h in rows[0]]
-    body = [r for r in rows[1:] if r[0] not in (None, '')]
-    n_all = write_csv(os.path.join(OUT, 'wells_all.csv'), header, body)
-
-    iK = header.index('K_m_per_day')
-    iN = header.index('NO3_mg_per_L')
-    iIn = header.index('Inside_Aquifer')
-    iLit = header.index('Lithology')
-
-    withK = [r for r in body if r[iK] not in (None, '')]
-    withN = [r for r in body if r[iN] not in (None, '')]
-    write_csv(os.path.join(OUT, 'wells_K.csv'), header, withK)
-    write_csv(os.path.join(OUT, 'wells_NO3.csv'), header, withN)
-
-    brows = sheet_rows(wb, '3_Boundary_Coords')
-    bhead = [str(h) for h in brows[0]]
-    bbody = [r for r in brows[1:] if r[0] not in (None, '')]
-    n_b = write_csv(os.path.join(OUT, 'boundary.csv'), bhead, bbody)
-
-    # --- the three seawater-intrusion sheets, copied verbatim ---------------
-    # Each has two banner lines and a blank line before the real header, so the
-    # header row is located rather than assumed.
-    swi = {'5_Cenameri2016_Chemistry': 'swi_chemistry.csv',
-           '6_Cenameri2016_Cl_Trend': 'swi_cl_trend.csv',
-           '7_Cenameri2016_SWI_Facts': 'swi_facts.csv'}
-    swi_written = {}
-    for sheet, fname in swi.items():
-        if sheet not in wb.sheetnames:
-            continue
-        rs = sheet_rows(wb, sheet)
-        hdr = None
-        for k, r in enumerate(rs):
-            cells = [c for c in r if c not in (None, '')]
-            if len(cells) >= 2 and k > 0:
-                hdr = k
-                break
-        body2 = [r for r in rs[hdr + 1:]
-                 if any(c not in (None, '') for c in r)
-                 and not str(r[0]).startswith(('Note', '- ', 'Notes'))]
-        swi_written[fname] = write_csv(os.path.join(OUT, fname),
-                                       [str(c) for c in rs[hdr]], body2)
-
-    with open(MRVA, encoding='utf-8') as f:
-        mr = list(csv.reader(f))
-    write_csv(os.path.join(OUT, 'mrva_44.csv'), mr[0], mr[1:])
-
-    lit = {}
-    for r in withK:
-        lit[r[iLit]] = lit.get(r[iLit], 0) + 1
-
-    manifest = {
-        'source_workbook': XLSX,
-        'source_mrva': MRVA,
-        'n_wells_total': n_all,
-        'n_wells_with_K': len(withK),
-        'n_wells_with_NO3': len(withN),
-        'n_wells_inside': sum(1 for r in body if r[iIn] == 'YES'),
-        'n_inside_with_K': sum(1 for r in withK if r[iIn] == 'YES'),
-        'n_inside_with_NO3': sum(1 for r in withN if r[iIn] == 'YES'),
-        'n_boundary_vertices': n_b,
-        'lithology_of_K_wells': lit,
-        'n_mrva': len(mr) - 1,
-        'swi_sheets': swi_written,
-    }
-    with open(os.path.join(OUT, 'manifest.json'), 'w', encoding='utf-8') as f:
-        json.dump(manifest, f, indent=2)
-    print(json.dumps(manifest, indent=2))
-
-
-if __name__ == '__main__':
-    sys.exit(main())
-```
-
-### A.7  `fk_config.m`
+### A.1  `fk_config.m`
 
 ```matlab
 function cfg = fk_config()
@@ -727,7 +603,7 @@ cfg.seed = 20260912;          % fixed seed, reported in the paper
 end
 ```
 
-### A.13  `fk_load_data.m`
+### A.2  `fk_load_data.m`
 
 ```matlab
 function D = fk_load_data(cfg)
@@ -794,7 +670,7 @@ fprintf('[load] DRASTIC range %g - %g, mean %.2f, sd %.2f (n = %d)\n', ...
 end
 ```
 
-### A.19  `fk_predictability.m`
+### A.3  `fk_predictability.m`
 
 ```matlab
 function Pr = fk_predictability(cfg, D)
@@ -904,7 +780,7 @@ fprintf(['[pred] best leave-one-out R2 achieved by any of these methods: ' ...
 end
 ```
 
-### A.25  `fk_build_grid.m`
+### A.4  `fk_build_grid.m`
 
 ```matlab
 function G = fk_build_grid(cfg, D)
@@ -975,7 +851,7 @@ fprintf(['[grid] %d active cells, discretised area %.2f km2 ' ...
 end
 ```
 
-### A.31  `fk_prior_field.m`
+### A.5  `fk_prior_field.m`
 
 ```matlab
 function P = fk_prior_field(cfg, D, G)
@@ -1178,7 +1054,7 @@ end
 end
 ```
 
-### A.37  `fk_forward.m`
+### A.6  `fk_forward.m`
 
 ```matlab
 function F = fk_forward(cfg, G, P)
@@ -1335,7 +1211,7 @@ end
 end
 ```
 
-### A.43  `fk_calibrate.m`
+### A.7  `fk_calibrate.m`
 
 ```matlab
 function Cal = fk_calibrate(cfg, D, G, P, F)
@@ -1556,7 +1432,7 @@ fprintf('[cal] leave-one-out: RMSE %.3f mg/L, R2 %.3f\n', ...
 end
 ```
 
-### A.49  `fk_sensitivity.m`
+### A.8  `fk_sensitivity.m`
 
 ```matlab
 function S = fk_sensitivity(cfg, G, P, F, Cal)
@@ -1692,7 +1568,7 @@ S.sd_reduction = red;
 end
 ```
 
-### A.55  `fk_design.m`
+### A.9  `fk_design.m`
 
 ```matlab
 function Des = fk_design(cfg, D, G, P, F, Cal, S)
@@ -1941,7 +1817,7 @@ r.Sigma_after = Sg;
 end
 ```
 
-### A.61  `oed_local.m`
+### A.10  `oed_local.m`
 
 ```matlab
 function R = oed_local(Phi, lam, w, sd_loc, cand, nsel, xa, ya, min_sep)
@@ -2016,7 +1892,7 @@ R.goal_advantage = (R.D.var_goal(end) - R.goal.var_goal(end)) / R.D.var_goal(end
 end
 ```
 
-### A.67  `fk_particles.m`
+### A.11  `fk_particles.m`
 
 ```matlab
 function Par = fk_particles(cfg, G, P, F, Cal, S)
@@ -2171,7 +2047,7 @@ fprintf('[part] %d forward transport solves in total\n', nfwd);
 end
 ```
 
-### A.73  `mrva_replicate.m`
+### A.12  `mrva_replicate.m`
 
 ```matlab
 function M = mrva_replicate(cfg)
@@ -2321,7 +2197,7 @@ end
 end
 ```
 
-### A.79  `fk_sweep.m`
+### A.13  `fk_sweep.m`
 
 ```matlab
 function Sw = fk_sweep(cfg, D, G, P, F, Cal, S, Des)
@@ -2470,7 +2346,7 @@ ev = evalc('S = fk_sensitivity(cfg, G, P, F, Cal);'); %#ok<NASGU>
 end
 ```
 
-### A.85  `fk_write_results.m`
+### A.14  `fk_write_results.m`
 
 ```matlab
 function fk_write_results(cfg, R)
@@ -2677,7 +2553,7 @@ fprintf('[out] results/results.json written (%d characters)\n', numel(txt));
 end
 ```
 
-### A.91  `fk_figures.m`
+### A.15  `fk_figures.m`
 
 ```matlab
 function fk_figures(R)
@@ -2972,7 +2848,1702 @@ text(xc + G.exi(1)*L, yc + G.exi(2)*L, ' flow', 'FontSize', 7);
 end
 ```
 
-### A.97  `run_all.m`
+### A.16  `fk_prepare_data.m`
+
+```matlab
+function fk_prepare_data()
+%FK_PREPARE_DATA  Extract the analysis tables from the sources into flat CSVs.
+%
+%  Inputs, read only and never modified:
+%    Fushe_Kuqe_All_Data.xlsx        the Desktop copy, which carries three
+%                                    sheets transcribed from Cenameri and
+%                                    Beqiraj (2016) besides the well and
+%                                    boundary tables
+%    Pugh2023_MRVA_44wells_REAL.csv  the USGS Mississippi Alluvial Plain set
+%
+%  Outputs, into ../data:
+%    wells_all.csv      180 wells, every column of the well sheet
+%    wells_K.csv        the wells carrying a pumping-test conductivity
+%    wells_NO3.csv      the wells carrying a nitrate measurement
+%    boundary.csv       the aquifer boundary vertices
+%    swi_chemistry.csv  major ions at four wells
+%    swi_cl_trend.csv   chloride in 1984, 1999 and 2001
+%    swi_facts.csv      flow direction, heads, thicknesses, wedge geometry
+%    mrva_44.csv        the USGS set
+%    manifest.json      the counts, so a reader can check the extraction
+%
+%  No value is altered, imputed or rounded: rows are copied or dropped only.
+
+cfg = fk_config();
+out = cfg.dir_data;
+if ~exist(out, 'dir'), mkdir(out); end
+
+xlsx = 'C:\Users\d_zeq\OneDrive\Desktop\Fushe_Kuqe_All_Data.xlsx';
+mrva = ['C:\Users\d_zeq\OneDrive\Desktop\PROJEKTE 2 ARTIKUJ\' ...
+        'AKUIFER TE DHENA TE NDRYSHME FUSHE KUQE TE DHENA\' ...
+        'Pugh2023_MRVA_44wells_REAL.csv'];
+for f = {xlsx, mrva}
+    if ~exist(f{1}, 'file')
+        error('fk_prepare_data:source', 'missing source %s', f{1});
+    end
+end
+
+% --------------------------------------------------------------- wells ----
+T = readtable(xlsx, 'Sheet', '2_All_Wells', 'VariableNamingRule', 'preserve');
+T = T(~ismissing(T.(1)), :);
+writetable(T, fullfile(out, 'wells_all.csv'));
+
+hasK = ~ismissing(T.('K_m_per_day'));
+hasN = ~ismissing(T.('NO3_mg_per_L'));
+writetable(T(hasK, :), fullfile(out, 'wells_K.csv'));
+writetable(T(hasN, :), fullfile(out, 'wells_NO3.csv'));
+
+B = readtable(xlsx, 'Sheet', '3_Boundary_Coords', 'VariableNamingRule', 'preserve');
+B = B(~ismissing(B.(1)), :);
+writetable(B, fullfile(out, 'boundary.csv'));
+
+% ------------------------------------- the three seawater-intrusion sheets --
+% Each carries two banner lines and a blank line before the real header, so
+% the header row is located rather than assumed.
+swi = {'5_Cenameri2016_Chemistry', 'swi_chemistry.csv'; ...
+       '6_Cenameri2016_Cl_Trend',  'swi_cl_trend.csv'; ...
+       '7_Cenameri2016_SWI_Facts', 'swi_facts.csv'};
+sheets = sheetnames(xlsx);
+nswi = zeros(size(swi, 1), 1);
+for k = 1:size(swi, 1)
+    if ~any(strcmp(sheets, swi{k, 1})), continue; end
+    C = readcell(xlsx, 'Sheet', swi{k, 1});
+    hdr = local_header_row(C);
+    S = cell2table(local_clean(C(hdr+1:end, :)), ...
+                   'VariableNames', local_names(C(hdr, :)));
+    S = S(~local_blank(S), :);
+    writetable(S, fullfile(out, swi{k, 2}));
+    nswi(k) = height(S);
+end
+
+% ---------------------------------------------------------------- MRVA ----
+M = readtable(mrva, 'VariableNamingRule', 'preserve');
+writetable(M, fullfile(out, 'mrva_44.csv'));
+
+% ------------------------------------------------------------ manifest ----
+inside = strcmp(string(T.('Inside_Aquifer')), "YES");
+lith = string(T.('Lithology'));
+man = struct();
+man.source_workbook = xlsx;
+man.source_mrva = mrva;
+man.n_wells_total = height(T);
+man.n_wells_with_K = sum(hasK);
+man.n_wells_with_NO3 = sum(hasN);
+man.n_wells_inside = sum(inside);
+man.n_inside_with_K = sum(inside & hasK);
+man.n_inside_with_NO3 = sum(inside & hasN);
+man.n_boundary_vertices = height(B);
+man.n_mrva = height(M);
+man.swi_rows = nswi';
+u = unique(lith(hasK));
+lc = struct();
+for k = 1:numel(u)
+    lc.(matlab.lang.makeValidName(char(u(k)))) = sum(hasK & lith == u(k));
+end
+man.lithology_of_K_wells = lc;
+
+fid = fopen(fullfile(out, 'manifest.json'), 'w');
+fwrite(fid, jsonencode(man, 'PrettyPrint', true));
+fclose(fid);
+
+fprintf(['[prep] %d wells, %d with K, %d with NO3, %d inside, ' ...
+         '%d boundary vertices, %d MRVA\n'], man.n_wells_total, ...
+        man.n_wells_with_K, man.n_wells_with_NO3, man.n_wells_inside, ...
+        man.n_boundary_vertices, man.n_mrva);
+end
+
+% =========================================================================
+function h = local_header_row(C)
+h = 0;
+for k = 2:size(C, 1)
+    row = C(k, :);
+    filled = sum(cellfun(@(v) ~local_ismissing(v), row));
+    if filled >= 2
+        h = k;
+        return
+    end
+end
+error('fk_prepare_data:header', 'no header row found');
+end
+
+function tf = local_ismissing(v)
+tf = isa(v, 'missing') || (ischar(v) && isempty(v)) || ...
+     (isnumeric(v) && isscalar(v) && isnan(v)) || ...
+     (isstring(v) && (ismissing(v) || v == ""));
+end
+
+function C = local_clean(C)
+for k = 1:numel(C)
+    if local_ismissing(C{k}), C{k} = ''; end
+    if isstring(C{k}), C{k} = char(C{k}); end
+    if isnumeric(C{k}) && isscalar(C{k}), C{k} = num2str(C{k}); end
+    if ~ischar(C{k}), C{k} = ''; end
+end
+end
+
+function nm = local_names(row)
+nm = cell(1, numel(row));
+for k = 1:numel(row)
+    v = row{k};
+    if local_ismissing(v), v = sprintf('Var%d', k); end
+    if ~ischar(v), v = char(string(v)); end
+    nm{k} = matlab.lang.makeValidName(v);
+end
+nm = matlab.lang.makeUniqueStrings(nm);
+end
+
+function tf = local_blank(S)
+C = table2cell(S);
+tf = all(cellfun(@(v) isempty(v), C), 2);
+first = C(:, 1);
+tf = tf | cellfun(@(v) ischar(v) && (startsWith(v, 'Note') || ...
+                                     startsWith(v, '- ')), first);
+end
+```
+
+### A.17  `fk_fill_manuscript.m`
+
+```matlab
+function fk_fill_manuscript(github_url, zenodo_doi)
+%FK_FILL_MANUSCRIPT  Put the run's numbers into the manuscript.
+%
+%  fk_fill_manuscript()
+%  fk_fill_manuscript(github_url, zenodo_doi)
+%
+%  Substitutes every {{placeholder}} in manuscript/manuscript.md with a value
+%  taken from results/results.json and writes manuscript/manuscript_filled.md.
+%  It refuses to write anything if a placeholder has no value behind it, and
+%  reports values that were computed and never cited, which catches a claim
+%  dropped from the text but not from the code.
+%
+%  This is what keeps the manuscript honest: a number reaches the text only by
+%  coming out of a run.
+%
+%  The output is also checked for control characters. That check is here
+%  because one crept into the source on 12 September 2026 and turned
+%  $\alpha_L$ into $\x07lpha_L$; the converter dropped the byte silently and
+%  the equation reached a delivered document as the word "lpha".
+
+cfg = fk_config();
+man = fullfile(cfg.dir_code, '..', 'manuscript');
+src = fullfile(man, 'manuscript.md');
+dst = fullfile(man, 'manuscript_filled.md');
+res = fullfile(cfg.dir_results, 'results.json');
+
+if nargin < 1 || isempty(github_url)
+    github_url = 'https://github.com/dulianzeqiraj/fushe-kuqe-oed';
+end
+if nargin < 2 || isempty(zenodo_doi)
+    zenodo_doi = 'https://doi.org/10.5281/zenodo.PLACEHOLDER';
+end
+
+r = jsondecode(fileread(res));
+m = local_values(r, github_url, zenodo_doi);
+
+txt = fileread(src);
+keys = fieldnames(m);
+used = false(numel(keys), 1);
+for k = 1:numel(keys)
+    tag = ['{{' keys{k} '}}'];
+    if contains(txt, tag)
+        used(k) = true;
+        txt = strrep(txt, tag, m.(keys{k}));
+    end
+end
+
+left = regexp(txt, '\{\{(\w+)\}\}', 'tokens');
+if ~isempty(left)
+    names = unique(cellfun(@(c) c{1}, left, 'UniformOutput', false));
+    error('fk_fill_manuscript:unresolved', ...
+          'no value for: %s', strjoin(names, ', '));
+end
+
+ctrl = double(txt) < 32 & ~ismember(double(txt), [9 10 13]);
+if any(ctrl)
+    j = find(ctrl, 1);
+    error('fk_fill_manuscript:control', ...
+          'control character U+%04X at offset %d, context "%s"', ...
+          double(txt(j)), j, txt(max(1, j-40):min(numel(txt), j+20)));
+end
+
+fid = fopen(dst, 'w', 'n', 'UTF-8');
+fwrite(fid, unicode2native(txt, 'UTF-8'));
+fclose(fid);
+
+fprintf('[fill] %s written, %d placeholders resolved\n', dst, sum(used));
+if any(~used)
+    fprintf('[fill] computed but unused: %s\n', ...
+            strjoin(keys(~used)', ', '));
+end
+end
+
+% =========================================================================
+function m = local_values(r, github_url, zenodo_doi)
+d = r.data;  p = r.predictability;  g = r.grid;  pr = r.prior;
+fw = r.forward;  cal = r.calibration;  fi = r.fisher;  des = r.design;
+loc = r.local;  sam = r.sampling;  mr = r.mrva;  sw = r.sweep;
+m = struct();
+f = @(fmt, v) sprintf(fmt, v);
+pct = @(x) [sprintf('%.1f', 100*x) ' per cent'];
+rng2 = @(v, fmt) [sprintf(fmt, min(v)) ' to ' sprintf(fmt, max(v))];
+
+% ---------------------------------------------------------------- data ---
+m.n_total = f('%d', d.n_wells_total);
+m.n_inside = f('%d', d.n_wells_inside);
+m.n_K = f('%d', d.n_with_K);
+m.n_NO3 = f('%d', d.n_with_NO3);
+m.n_inside_K = f('%d', d.n_inside_with_K);
+m.n_inside_NO3 = f('%d', d.n_inside_with_NO3);
+m.n_boundary = f('%d', d.n_boundary_vertices);
+m.K_min = f('%.0f', d.K_min);   m.K_max = f('%.0f', d.K_max);
+m.K_mean = f('%.1f', d.K_mean); m.K_sd = f('%.1f', d.K_sd);
+m.NO3_min = f('%.2f', d.NO3_min);   m.NO3_max = f('%.2f', d.NO3_max);
+m.NO3_mean = f('%.2f', d.NO3_mean); m.NO3_sd = f('%.2f', d.NO3_sd);
+m.DR_min = f('%.0f', d.DRASTIC_min); m.DR_max = f('%.0f', d.DRASTIC_max);
+m.DR_mean = f('%.1f', d.DRASTIC_mean);
+m.facies_c = f('%d', d.facies_counts(1));
+m.facies_m = f('%d', d.facies_counts(2));
+m.facies_f = f('%d', d.facies_counts(3));
+m.eta2 = f('%.3f', d.facies_K_eta2);
+m.Fstat = f('%.2f', d.facies_K_F);
+m.pval = f('%.2f', d.facies_K_p);
+m.df1 = '2';
+m.df2 = f('%d', d.n_with_K - 3);
+
+% ------------------------------------------------------ predictability ---
+m.best_pred_R2 = f('%+.2f', p.best_R2);
+m.krig_min = f('%+.2f', min(p.kriging_R2));
+m.krig_max = f('%+.2f', max(p.kriging_R2));
+m.idw_min = f('%+.2f', min(p.idw_R2));
+m.idw_max = f('%+.2f', max(p.idw_R2));
+lin = local_lookup(p.linear_names, p.linear_R2);
+m.lin_xy = f('%+.2f', lin('X,Y'));
+m.lin_drastic = f('%+.2f', lin('DRASTIC'));
+m.corr_north = f('%+.2f', p.corr_northing);
+m.corr_along = f('%+.2f', p.corr_alongflow);
+m.corr_drastic = f('%+.2f', p.corr_drastic);
+m.corr_K = f('%+.2f', p.corr_K);
+
+% ------------------------------------------------------ grid and prior ---
+m.nx = f('%d', g.nx);  m.ny = f('%d', g.ny);
+m.dx = f('%g', g.dx_m);
+m.n_active = f('%d', g.n_active);
+m.area_grid = f('%.1f', g.area_km2);
+m.area_poly = f('%.1f', g.area_polygon_km2);
+m.ne_mean = f('%.3f', pr.network_mean);
+m.ne_sd = f('%.3f', pr.network_sd);
+m.sd_iv = f('%.4f', pr.sd_independent);
+m.sd_c = f('%.4f', pr.sd_facies_correlated(1));
+m.sd_m = f('%.4f', pr.sd_facies_correlated(2));
+m.sd_f = f('%.4f', pr.sd_facies_correlated(3));
+m.sd_used = f('%.4f', pr.sd_used);
+m.sd_inflation = f('%.1f', pr.sd_inflation_pct);
+m.nugget = f('%.4f', pr.variogram_nugget);
+m.sill = f('%.4f', pr.variogram_sill);
+m.vrange = f('%.0f', pr.variogram_range_m);
+m.n_kl = f('%d', pr.n_kl);
+m.kl_var = f('%.0f', 100*pr.kl_variance_captured);
+
+% ------------------------------------------------------------- forward ---
+m.gradient = f('%.2e', fw.gradient);
+m.q0 = f('%.4f', fw.darcy_flux_m_per_day);
+m.gam_min = f('%.2f', fw.Gamma_min);
+m.gam_max = f('%.2f', fw.Gamma_max);
+
+% --------------------------------------------------------- calibration ---
+m.T0_yr = f('%.1f', cal.T0_years);
+m.cal_rmse = f('%.2f', cal.rmse_mg_per_L);
+m.cal_R2 = f('%.2f', cal.R2);
+m.cal_loo_rmse = f('%.2f', cal.loo_rmse_mg_per_L);
+m.cal_loo_R2 = f('%+.2f', cal.loo_R2);
+m.drastic_contrib = f('%.3f', cal.R2 - cal.R2_without_DRASTIC);
+m.null_R2 = f('%.2f', cal.null_best_R2);
+m.null_kappa = f('%.2f', cal.null_best_kappa);
+m.frac_neg = [sprintf('%.0f', 100*cal.frac_source_negative_before_clipping) ' per cent'];
+
+% -------------------------------------------------- Fisher information ---
+m.tr_obs = f('%.3e', fi.trace_observations);
+m.tr_prior = f('%.3e', fi.trace_prior);
+m.frac_obs_sci = f('%.1e', fi.observation_share);
+m.dofs = f('%.4f', fi.dofs);
+m.n_modes = f('%d', fi.n_modes);
+m.info_gain = f('%.3f', fi.information_gain_nats);
+m.sd_red_pct = f('%.2f', 100*fi.sd_reduction_fraction);
+m.sd_prior_mean = f('%.5f', fi.sd_prior_mean);
+m.sd_post_mean = f('%.5f', fi.sd_post_mean);
+m.fd_check = f('%.1e', fi.finite_difference_check);
+m.fd_order = f('%.2f', fi.fd_convergence_order);
+
+% -------------------------------------------------------------- design ---
+m.horizon_frac = f('%.0f', 100*des.horizon_fraction);
+m.n_new = f('%d', des.n_new_wells);
+m.sd_local = f('%.3f', des.sd_local);
+m.tau_mean_yr = f('%.1f', des.tau_weighted_mean_days/365.25);
+m.sd_goal_prior = f('%.1f', des.sd_goal_prior_days);
+m.sd_goal_D = f('%.1f', des.sd_goal_after_D_days);
+m.sd_goal_G = f('%.1f', des.sd_goal_after_goal_days);
+m.sd_goal_D_hor = f('%.1f', des.sd_goal_after_D_horizon_days);
+m.sd_goal_G_hor = f('%.1f', des.sd_goal_after_goal_horizon_days);
+m.sd_goal_red_pct = f('%.1f', 100*(1 - des.sd_goal_after_goal_days/des.sd_goal_prior_days));
+m.median_sep_m = f('%.0f', des.median_separation_m);
+m.V_goal = f('%.1f', mean(des.goal_DRASTIC));
+m.V_D = f('%.1f', mean(des.D_DRASTIC));
+m.V_domain = f('%.1f', des.domain_mean_DRASTIC);
+adv = (des.sd_goal_after_D_days^2 - des.sd_goal_after_goal_days^2) / ...
+      des.sd_goal_after_D_days^2;
+m.goal_adv_pct = pct(adv);
+m.horizon_med = f('%.0f', median(des.information_horizon_m));
+m.horizon_min = f('%.0f', min(des.information_horizon_m));
+m.horizon_max = f('%.0f', max(des.information_horizon_m));
+m.horizon_over_range = f('%.1f', des.information_horizon_median_m / pr.variogram_range_m);
+m.corr_constrained = f('%.3f', des.information_correlation_max);
+m.corr_horizon = f('%.3f', des.information_correlation_horizon_max);
+m.corr_free = f('%.3f', des.information_correlation_unconstrained_max);
+m.free_span = f('%.0f', des.unconstrained_span_m);
+m.min_sep = f('%.0f', des.min_separation_m);
+m.R_equiv = f('%.2f', des.R_equivalence);
+m.R_inverse = f('%.0f', 1/des.R_equivalence);
+m.sd_pump_ne = f('%.4f', des.sd_pump_test_on_ne);
+m.gain_conc = f('%.3g', des.gain_conc_best);
+m.gain_pump = f('%.3g', des.gain_pump_best);
+
+% ------------------------------------------------------ local operator ---
+m.loc_D_pct = pct(loc.var_reduction_D);
+m.loc_goal_pct = pct(loc.var_reduction_goal);
+m.loc_ratio = f('%.1f', loc.var_reduction_goal / loc.var_reduction_D);
+m.loc_sep_m = f('%.0f', loc.median_separation_m);
+m.loc_sep_km = f('%.1f', loc.median_separation_m/1000);
+
+% ------------------------------------------------------------ sampling ---
+m.gn_iters = f('%d', sam.gn_iterations);
+m.cond_H = f('%.1f', sam.condition_number);
+m.iters_nat = f('%d', sam.iters_natural);
+m.iters_euc = f('%d', sam.iters_euclidean);
+m.sqrt_kappa = f('%.1f', sam.sqrt_condition);
+m.M_imp = f('%d', sam.M_implicit);
+m.ess_imp = f('%.3f', sam.ess_implicit);
+m.M_sir = f('%d', sam.M_sir);
+m.ess_sir = f('%.3f', sam.ess_sir);
+
+% ---------------------------------------------------------------- MRVA ---
+m.mrva_n = f('%d', mr.n_wells);
+m.mrva_K_min = f('%.2f', mr.K_min);
+m.mrva_K_max = f('%.1f', mr.K_max);
+m.mrva_K_mean = f('%.1f', mr.K_mean);
+m.mrva_V_min = f('%.0f', mr.V_min);
+m.mrva_V_max = f('%.0f', mr.V_max);
+m.mrva_mismatch = f('%d', mr.drastic_mismatch);
+m.mrva_sep_km = f('%.1f', mr.median_separation_m/1000);
+m.mrva_D_pct = pct(mr.var_reduction_D);
+m.mrva_goal_pct = pct(mr.var_reduction_goal);
+m.mrva_V_goal = f('%.1f', mr.mean_DRASTIC_goal);
+m.mrva_V_D = f('%.1f', mr.mean_DRASTIC_D);
+
+% --------------------------------------------------------------- sweep ---
+m.sw_frac_range = rng2(sw.frac_obs_vs_sigma, '%.1e');
+m.sw_R_sigma_range = rng2(sw.R_vs_sigma, '%.2f');
+m.sw_R_sigmaK_range = rng2(sw.R_vs_sigmaK, '%.2f');
+m.sw_sep_range = rng2(sw.sep_vs_gamma, '%.0f');
+m.sw_R_alpha_range = rng2(sw.R_vs_alphaL, '%.2f');
+
+% -------------------------------------------------------------- tables ---
+m.TABLE_INVENTORY = local_tbl_inventory(d, g, pr);
+m.TABLE_LOO = local_tbl_loo(p, cal);
+m.TABLE_DESIGN = local_tbl_design(des, loc, mr);
+m.TABLE_SWEEP = local_tbl_sweep(sw);
+
+m.GITHUB_URL = github_url;
+m.ZENODO_DOI = zenodo_doi;
+end
+
+% =========================================================================
+function h = local_lookup(names, vals)
+h = containers.Map('KeyType', 'char', 'ValueType', 'double');
+for k = 1:numel(names)
+    nm = names{k};
+    if isstring(nm) || iscell(nm), nm = char(nm); end
+    h(nm) = vals(k);
+end
+end
+
+% =========================================================================
+function t = local_tbl_inventory(d, g, pr)
+rows = {
+ 'Monitoring points with a DRASTIC index', sprintf('%d', d.n_wells_total)
+ 'Of which inside the digitised boundary', sprintf('%d', d.n_wells_inside)
+ 'With a pumping-test hydraulic conductivity', sprintf('%d', d.n_with_K)
+ 'With a nitrate concentration', sprintf('%d', d.n_with_NO3)
+ 'Inside the boundary, with conductivity', sprintf('%d', d.n_inside_with_K)
+ 'Inside the boundary, with nitrate', sprintf('%d', d.n_inside_with_NO3)
+ 'Aquifer boundary vertices', sprintf('%d', d.n_boundary_vertices)
+ ['Digitised area (km' char(178) ')'], sprintf('%.1f', g.area_polygon_km2)
+ ['Hydraulic conductivity (m d' char(8315) char(185) ')'], ...
+     sprintf('%.0f to %.0f, mean %.1f, sd %.1f', d.K_min, d.K_max, d.K_mean, d.K_sd)
+ ['Nitrate (mg L' char(8315) char(185) ')'], ...
+     sprintf('%.2f to %.2f, mean %.2f, sd %.2f', d.NO3_min, d.NO3_max, d.NO3_mean, d.NO3_sd)
+ 'DRASTIC index', ...
+     sprintf('%.0f to %.0f, mean %.1f, sd %.1f', d.DRASTIC_min, d.DRASTIC_max, d.DRASTIC_mean, d.DRASTIC_sd)
+ 'Lithological classes of the K wells (coarse/medium/fine)', ...
+     sprintf('%d / %d / %d', d.facies_counts(1), d.facies_counts(2), d.facies_counts(3))
+ 'ANOVA of K on the lithological label', ...
+     sprintf('%s%s = %.3f, F(2,%d) = %.2f, p = %.2f', char(951), char(178), ...
+             d.facies_K_eta2, d.n_with_K-3, d.facies_K_F, d.facies_K_p)
+ ['Exponential variogram of log' char(8321) char(8320) 'K'], ...
+     sprintf('nugget %.4f, partial sill %.4f, range %.0f m', ...
+             pr.variogram_nugget, pr.variogram_sill, pr.variogram_range_m)
+ };
+t = local_mdtable({'Quantity', 'Value'}, rows);
+end
+
+function t = local_tbl_loo(p, cal)
+rows = {};
+for k = 1:numel(p.idw_power)
+    rows(end+1, :) = {sprintf('Inverse distance, power %d', p.idw_power(k)), ...
+                      sprintf('%+.3f', p.idw_R2(k))}; %#ok<AGROW>
+end
+for k = 1:numel(p.kriging_range_m)
+    rows(end+1, :) = {sprintf('Ordinary kriging, range %g km', p.kriging_range_m(k)/1000), ...
+                      sprintf('%+.3f', p.kriging_R2(k))}; %#ok<AGROW>
+end
+for k = 1:numel(p.linear_names)
+    nm = p.linear_names{k};
+    if isstring(nm), nm = char(nm); end
+    rows(end+1, :) = {sprintf('Linear regression on %s', nm), ...
+                      sprintf('%+.3f', p.linear_R2(k))}; %#ok<AGROW>
+end
+rows(end+1, :) = {'Transient transport model', sprintf('%+.3f', cal.loo_R2)};
+rows(end+1, :) = {'Network mean (baseline)', '0.000'};
+t = local_mdtable({'Method', 'Leave-one-out R2'}, rows);
+end
+
+function t = local_tbl_design(des, loc, mr)
+rows = {
+ 'Transport observations, Fushe-Kuqe', ...
+   sprintf('%.1f', 100*(1 - (des.sd_goal_after_D_days/des.sd_goal_prior_days)^2)), ...
+   sprintf('%.1f', 100*(1 - (des.sd_goal_after_goal_days/des.sd_goal_prior_days)^2)), ...
+   sprintf('%.0f', des.median_separation_m)
+ 'Characterisation points, Fushe-Kuqe', ...
+   sprintf('%.1f', 100*loc.var_reduction_D), ...
+   sprintf('%.1f', 100*loc.var_reduction_goal), ...
+   sprintf('%.0f', loc.median_separation_m)
+ 'Characterisation points, MRVA', ...
+   sprintf('%.1f', 100*mr.var_reduction_D), ...
+   sprintf('%.1f', 100*mr.var_reduction_goal), ...
+   sprintf('%.0f', mr.median_separation_m)
+ };
+t = local_mdtable({'Observation type and site', 'D-optimal (%)', ...
+                   'Goal-oriented (%)', 'Median separation (m)'}, rows);
+end
+
+function t = local_tbl_sweep(sw)
+rows = {
+ ['Nitrate measurement sd (mg L' char(8315) char(185) ')'], ...
+   sprintf('%g to %g', min(sw.sigma_obs), max(sw.sigma_obs)), ...
+   sprintf('%.3f to %.3f', min(sw.R_vs_sigma), max(sw.R_vs_sigma)), ...
+   sprintf('observation share %.1e to %.1e', min(sw.frac_obs_vs_sigma), max(sw.frac_obs_vs_sigma))
+ 'Pumping-test relative error', ...
+   sprintf('%g to %g', min(sw.sigma_K_rel), max(sw.sigma_K_rel)), ...
+   sprintf('%.3f to %.3f', min(sw.R_vs_sigmaK), max(sw.R_vs_sigmaK)), '-'
+ 'Longitudinal dispersivity (m)', ...
+   sprintf('%g to %g', min(sw.alphaL), max(sw.alphaL)), ...
+   sprintf('%.3f to %.3f', min(sw.R_vs_alphaL), max(sw.R_vs_alphaL)), ...
+   sprintf('median separation %.0f to %.0f m', min(sw.sep_vs_alphaL), max(sw.sep_vs_alphaL))
+ 'Vulnerability exponent', ...
+   sprintf('%g to %g', min(sw.gammaV), max(sw.gammaV)), '-', ...
+   sprintf('median separation %.0f to %.0f m, goal advantage %.2f to %.2f%%', ...
+           min(sw.sep_vs_gamma), max(sw.sep_vs_gamma), ...
+           100*min(sw.adv_vs_gamma), 100*max(sw.adv_vs_gamma))
+ };
+t = local_mdtable({'Assumption varied', 'Range', 'R', 'Other effect'}, rows);
+end
+
+% =========================================================================
+function t = local_mdtable(head, rows)
+lines = {['| ' strjoin(head, ' | ') ' |'], ...
+         ['|' repmat('---|', 1, numel(head))]};
+for k = 1:size(rows, 1)
+    lines{end+1} = ['| ' strjoin(rows(k, :), ' | ') ' |']; %#ok<AGROW>
+end
+t = strjoin(lines, newline);
+end
+```
+
+### A.18  `fk_latex2omml.m`
+
+```matlab
+function xml = fk_latex2omml(tex, display)
+%FK_LATEX2OMML  Convert the LaTeX subset used in this manuscript to OMML.
+%
+%  xml = fk_latex2omml(tex)           inline equation
+%  xml = fk_latex2omml(tex, true)     display equation, wrapped in m:oMathPara
+%
+%  This is not a general LaTeX engine.  It covers exactly the constructs the
+%  manuscript uses, which fk_check_omml.m enumerates from the source and
+%  asserts are all handled; anything outside that set raises an error rather
+%  than being silently dropped, because a silently dropped symbol in an
+%  equation is the kind of error that survives to print.
+%
+%  Word stores equations as Office MathML.  Writing it directly keeps the
+%  equations editable in Word, which rendering them as images would not.
+
+if nargin < 2, display = false; end
+
+toks = local_tokenise(tex);
+[body, pos] = local_parse(toks, 1, numel(toks));
+if pos <= numel(toks)
+    error('fk_latex2omml:trailing', 'unconsumed input in "%s"', tex);
+end
+
+if display
+    xml = ['<m:oMathPara><m:oMath>' body '</m:oMath></m:oMathPara>'];
+else
+    xml = ['<m:oMath>' body '</m:oMath>'];
+end
+end
+
+% =========================================================================
+function t = local_tokenise(s)
+%LOCAL_TOKENISE  Split into command, brace, script and character tokens.
+t = {};
+i = 1;
+n = numel(s);
+while i <= n
+    c = s(i);
+    if c == '\'
+        if i == n, error('fk_latex2omml:dangling', 'trailing backslash'); end
+        j = i + 1;
+        if isletter(s(j))
+            while j <= n && isletter(s(j)), j = j + 1; end
+            t{end+1} = s(i:j-1); %#ok<AGROW>
+            i = j;
+        else
+            t{end+1} = s(i:j); %#ok<AGROW>
+            i = j + 1;
+        end
+    elseif any(c == '{}^_')
+        t{end+1} = c; %#ok<AGROW>
+        i = i + 1;
+    elseif c == ' '
+        i = i + 1;                      % spacing is Word's business
+    else
+        t{end+1} = c; %#ok<AGROW>
+        i = i + 1;
+    end
+end
+end
+
+% =========================================================================
+function [out, i] = local_parse(t, i, stop)
+%LOCAL_PARSE  Parse tokens i..stop into OMML, collapsing adjacent characters
+%             into single runs so Word does not get one run per letter.
+out = '';
+buf = '';
+    function flush()
+        if ~isempty(buf)
+            out = [out local_run(buf)];
+            buf = '';
+        end
+    end
+
+while i <= stop
+    tk = t{i};
+    if strcmp(tk, '}')
+        break
+    elseif strcmp(tk, '{')
+        [inner, i] = local_parse(t, i + 1, stop);
+        if i > stop || ~strcmp(t{i}, '}')
+            error('fk_latex2omml:brace', 'unbalanced brace');
+        end
+        i = i + 1;
+        [inner, i] = local_scripts(t, i, stop, inner);
+        flush();
+        out = [out inner];
+    elseif strcmp(tk, '^') || strcmp(tk, '_')
+        % a script attached to the characters accumulated so far
+        if isempty(buf)
+            error('fk_latex2omml:script', 'script with no base');
+        end
+        base = local_run(buf(end));
+        buf(end) = [];
+        flush();
+        [sc, i] = local_scripts(t, i, stop, base);
+        out = [out sc];
+    else
+        [node, i, isrun] = local_atom(t, i, stop);
+        if isrun
+            buf = [buf node];
+        else
+            [node, i] = local_scripts(t, i, stop, node);
+            flush();
+            out = [out node];
+        end
+    end
+end
+flush();
+end
+
+% =========================================================================
+function [out, i] = local_scripts(t, i, stop, base)
+%LOCAL_SCRIPTS  Attach any ^ and _ that follow a completed base.
+sup = ''; sub = '';
+while i <= stop && (strcmp(t{i}, '^') || strcmp(t{i}, '_'))
+    kind = t{i};
+    [arg, i] = local_argument(t, i + 1, stop);
+    if strcmp(kind, '^'), sup = arg; else, sub = arg; end
+end
+if ~isempty(sup) && ~isempty(sub)
+    out = ['<m:sSubSup><m:e>' base '</m:e><m:sub>' sub ...
+           '</m:sub><m:sup>' sup '</m:sup></m:sSubSup>'];
+elseif ~isempty(sup)
+    out = ['<m:sSup><m:e>' base '</m:e><m:sup>' sup '</m:sup></m:sSup>'];
+elseif ~isempty(sub)
+    out = ['<m:sSub><m:e>' base '</m:e><m:sub>' sub '</m:sub></m:sSub>'];
+else
+    out = base;
+end
+end
+
+% =========================================================================
+function [out, i] = local_argument(t, i, stop)
+%LOCAL_ARGUMENT  One braced group, or one atom.
+if i > stop, error('fk_latex2omml:arg', 'missing argument'); end
+if strcmp(t{i}, '{')
+    [out, i] = local_parse(t, i + 1, stop);
+    if i > stop || ~strcmp(t{i}, '}')
+        error('fk_latex2omml:brace', 'unbalanced brace in argument');
+    end
+    i = i + 1;
+else
+    [node, i, isrun] = local_atom(t, i, stop);
+    if isrun, out = local_run(node); else, out = node; end
+end
+end
+
+% =========================================================================
+function [out, i, isrun] = local_atom(t, i, stop)
+%LOCAL_ATOM  One token, expanded.  isrun true means "plain text, may be
+%            merged with neighbours into one run".
+tk = t{i};
+isrun = false;
+
+% ---- structures taking arguments -----------------------------------------
+switch tk
+    case '\frac'
+        [num, i] = local_argument(t, i + 1, stop);
+        [den, i] = local_argument(t, i, stop);
+        out = ['<m:f><m:fPr><m:type m:val="bar"/></m:fPr>' ...
+               '<m:num>' num '</m:num><m:den>' den '</m:den></m:f>'];
+        return
+    case '\sqrt'
+        [e, i] = local_argument(t, i + 1, stop);
+        out = ['<m:rad><m:radPr><m:degHide m:val="1"/></m:radPr>' ...
+               '<m:deg/><m:e>' e '</m:e></m:rad>'];
+        return
+    case {'\bar', '\overline'}
+        [e, i] = local_argument(t, i + 1, stop);
+        out = ['<m:bar><m:barPr><m:pos m:val="top"/></m:barPr>' ...
+               '<m:e>' e '</m:e></m:bar>'];
+        return
+    case {'\text', '\mathcal', '\mathrm'}
+        [e, i] = local_argument(t, i + 1, stop);
+        out = e;                       % upright is Word's default for m:t
+        return
+    case '\operatorname'
+        % An upright run, not an m:func.  A function with an empty base is
+        % valid OMML but Word reserves space for the missing argument and
+        % leaves a gap before the bracket that follows.
+        j = i + 1;
+        if j <= stop && strcmp(t{j}, '{')
+            k = j + 1; txt = '';
+            while k <= stop && ~strcmp(t{k}, '}')
+                txt = [txt t{k}]; %#ok<AGROW>
+                k = k + 1;
+            end
+            i = k + 1;
+        else
+            txt = t{j}; i = j + 1;
+        end
+        out = local_upright(txt);
+        return
+    case '\underbrace'
+        [e, i] = local_argument(t, i + 1, stop);
+        if i <= stop && strcmp(t{i}, '_')
+            [lab, i] = local_argument(t, i + 1, stop);
+        else
+            lab = '';
+        end
+        grp = ['<m:groupChr><m:groupChrPr><m:chr m:val="&#9183;"/>' ...
+               '<m:pos m:val="bot"/><m:vertJc m:val="top"/></m:groupChrPr>' ...
+               '<m:e>' e '</m:e></m:groupChr>'];
+        if isempty(lab)
+            out = grp;
+        else
+            out = ['<m:limLow><m:e>' grp '</m:e><m:lim>' lab '</m:lim></m:limLow>'];
+        end
+        return
+    case '\sum'
+        sub = ''; sup = '';
+        while i + 1 <= stop && (strcmp(t{i+1}, '_') || strcmp(t{i+1}, '^'))
+            kind = t{i+1};
+            [arg, i2] = local_argument(t, i + 2, stop);
+            if strcmp(kind, '_'), sub = arg; else, sup = arg; end
+            i = i2 - 1;
+        end
+        i = i + 1;
+        if isempty(sup)
+            % A sum with only a lower index is set as the symbol with a
+            % subscript.  An n-ary with an empty base would be correct OMML
+            % but Word reserves space for the missing summand and leaves a
+            % visible gap before the terms that follow.
+            base = local_run(char(8721));
+            if isempty(sub)
+                out = base;
+            else
+                out = ['<m:sSub><m:e>' base '</m:e><m:sub>' sub ...
+                       '</m:sub></m:sSub>'];
+            end
+        else
+            pr = ['<m:naryPr><m:chr m:val="&#8721;"/>' ...
+                  '<m:limLoc m:val="undOvr"/>'];
+            if isempty(sub), pr = [pr '<m:subHide m:val="1"/>']; end
+            pr = [pr '</m:naryPr>'];
+            out = ['<m:nary>' pr '<m:sub>' sub '</m:sub><m:sup>' sup ...
+                   '</m:sup><m:e></m:e></m:nary>'];
+        end
+        return
+    case '\left'
+        i = i + 1;
+        if i > stop, error('fk_latex2omml:left', '\\left with no delimiter'); end
+        opench = local_delim(t{i});
+        i = i + 1;
+        depth = 0;
+        j = i;
+        while j <= stop
+            if strcmp(t{j}, '\left'), depth = depth + 1; end
+            if strcmp(t{j}, '\right')
+                if depth == 0, break; end
+                depth = depth - 1;
+            end
+            j = j + 1;
+        end
+        if j > stop, error('fk_latex2omml:right', 'missing \\right'); end
+        [inner, ~] = local_parse(t, i, j - 1);
+        closech = local_delim(t{j + 1});
+        i = j + 2;
+        out = ['<m:d><m:dPr><m:begChr m:val="' opench '"/><m:endChr m:val="' ...
+               closech '"/></m:dPr><m:e>' inner '</m:e></m:d>'];
+        return
+end
+
+% ---- functions rendered upright ------------------------------------------
+fn = {'\log', '\ln', '\exp', '\det', '\max', '\min', '\inf', '\sup'};
+if any(strcmp(tk, fn))
+    name = tk(2:end);
+    i = i + 1;
+    sub = '';
+    if i <= stop && strcmp(t{i}, '_')
+        [sub, i] = local_argument(t, i + 1, stop);
+    end
+    out = local_upright([name char(8201)]);   % thin space after the name
+    if ~isempty(sub)
+        out = ['<m:sSub><m:e>' local_upright(name) '</m:e><m:sub>' sub ...
+               '</m:sub></m:sSub>' local_upright(char(8201))];
+    end
+    return
+end
+
+% ---- single symbols -------------------------------------------------------
+% found and sym are separate because several commands map to the empty
+% string: \! is negative thin space, which Word handles by itself.
+[found, sym] = local_symbol(tk);
+if found
+    i = i + 1;
+    out = sym;
+    isrun = true;
+    return
+end
+
+if numel(tk) == 1
+    i = i + 1;
+    out = tk;
+    isrun = true;
+    return
+end
+
+error('fk_latex2omml:unknown', 'unhandled LaTeX token "%s"', tk);
+end
+
+% =========================================================================
+function d = local_delim(tk)
+switch tk
+    case {'(', ')'}, d = tk;
+    case {'[', ']'}, d = tk;
+    case {'\{'},     d = '{';
+    case {'\}'},     d = '}';
+    case {'|'},      d = '|';
+    case {'.'},      d = '';
+    otherwise, error('fk_latex2omml:delim', 'unsupported delimiter "%s"', tk);
+end
+end
+
+% =========================================================================
+function [found, s] = local_symbol(tk)
+%LOCAL_SYMBOL  Unicode for the commands the manuscript uses.  found is false
+%              for anything else, so local_atom can raise a clear error; it is
+%              separate from s because some commands map to the empty string.
+persistent map
+if isempty(map)
+    map = containers.Map('KeyType', 'char', 'ValueType', 'char');
+    g = { '\alpha',char(945); '\beta',char(946); '\gamma',char(947); ...
+          '\Gamma',char(915); '\delta',char(948); '\Delta',char(916); ...
+          '\epsilon',char(949); '\eta',char(951); '\theta',char(952); ...
+          '\Theta',char(920); '\kappa',char(954); '\lambda',char(955); ...
+          '\Lambda',char(923); '\mu',char(956); '\nu',char(957); ...
+          '\xi',char(958); '\Xi',char(926); '\pi',char(960); ...
+          '\Pi',char(928); '\rho',char(961); '\sigma',char(963); ...
+          '\Sigma',char(931); '\tau',char(964); '\phi',char(966); ...
+          '\Phi',char(934); '\chi',char(967); '\psi',char(968); ...
+          '\Psi',char(936); '\omega',char(969); '\Omega',char(937); ...
+          '\partial',char(8706); '\ell',char(8467); '\top',char(8868); ...
+          '\in',char(8712); '\pm',char(177); '\sim',char(8764); ...
+          '\mapsto',char(8614); '\square',char(9633); '\times',char(215); ...
+          '\cdot',char(183); '\leq',char(8804); '\geq',char(8805); ...
+          '\neq',char(8800); '\approx',char(8776); '\infty',char(8734); ...
+          '\{','{'; '\}','}'; '\,',' '; '\;',' '; '\ ',' '; ...
+          '\!',''; '\qquad','    '; '\quad','  '; '\%','%' };
+    for k = 1:size(g, 1)
+        map(g{k, 1}) = g{k, 2};
+    end
+end
+found = isKey(map, tk);
+if found
+    s = map(tk);
+else
+    s = '';
+end
+end
+
+% =========================================================================
+function r = local_run(txt)
+if isempty(txt)
+    r = '';
+else
+    r = ['<m:r><m:t xml:space="preserve">' fk_xmlesc(txt) '</m:t></m:r>'];
+end
+end
+
+% =========================================================================
+function r = local_upright(txt)
+%LOCAL_UPRIGHT  A run set in roman, for operator and function names, which
+%               Word would otherwise italicise as if they were variables.
+r = ['<m:r><m:rPr><m:nor/></m:rPr><m:t xml:space="preserve">' ...
+     fk_xmlesc(txt) '</m:t></m:r>'];
+end
+```
+
+### A.19  `fk_xmlesc.m`
+
+```matlab
+function s = fk_xmlesc(s)
+%FK_XMLESC  Escape the five XML metacharacters, ampersand first.
+s = strrep(s, '&', '&amp;');
+s = strrep(s, '<', '&lt;');
+s = strrep(s, '>', '&gt;');
+s = strrep(s, '"', '&quot;');
+s = strrep(s, '''', '&apos;');
+end
+```
+
+### A.20  `fk_check_omml.m`
+
+```matlab
+function fk_check_omml(mdfile)
+%FK_CHECK_OMML  Convert every equation in the manuscript and report failures.
+%
+%  The converter raises on anything it does not recognise rather than dropping
+%  it, so running it over the whole manuscript is the test that it covers the
+%  source.  Called by fk_build_docx before it writes anything.
+
+if nargin < 1
+    cfg = fk_config();
+    mdfile = fullfile(cfg.dir_code, '..', 'manuscript', 'manuscript_filled.md');
+end
+s = fileread(mdfile);
+
+disp_eq = regexp(s, '\$\$(.*?)\$\$', 'tokens');
+rest = regexprep(s, '\$\$.*?\$\$', '');
+inl_eq = regexp(rest, '(?<!\$)\$([^\$\n]+?)\$(?!\$)', 'tokens');
+
+nd = numel(disp_eq);  ni = numel(inl_eq);
+fprintf('[omml] %d display and %d inline equations\n', nd, ni);
+
+bad = 0;
+for k = 1:nd
+    try
+        x = fk_latex2omml(disp_eq{k}{1}, true);
+        assert(contains(x, 'm:oMathPara'));
+    catch ME
+        bad = bad + 1;
+        fprintf('[omml] DISPLAY %d failed: %s\n   %s\n', k, ME.message, ...
+                strtrim(disp_eq{k}{1}));
+    end
+end
+for k = 1:ni
+    try
+        fk_latex2omml(inl_eq{k}{1}, false);
+    catch ME
+        bad = bad + 1;
+        fprintf('[omml] INLINE %d failed: %s\n   %s\n', k, ME.message, ...
+                strtrim(inl_eq{k}{1}));
+    end
+end
+
+if bad > 0
+    error('fk_check_omml:failed', '%d of %d equations did not convert', ...
+          bad, nd + ni);
+end
+fprintf('[omml] all %d equations convert\n', nd + ni);
+end
+```
+
+### A.21  `fk_md2docx.m`
+
+```matlab
+function fk_md2docx(mdtext, template, outfile)
+%FK_MD2DOCX  Write a .docx from the manuscript's markdown, in MATLAB alone.
+%
+%  fk_md2docx(mdtext, template, outfile)
+%
+%  Handles the subset of markdown the manuscript uses: YAML title and author,
+%  ATX headings, paragraphs, bullet and numbered lists, pipe tables, fenced
+%  code blocks, bold and code spans, and inline and display mathematics, the
+%  last through fk_latex2omml.
+%
+%  The template supplies every part of the package except word/document.xml:
+%  styles, numbering, theme, fonts, section setup.  Only the body is written
+%  here, which is the same discipline used elsewhere in this project for
+%  editing a Word file without rebuilding it.
+%
+%  Anything the parser does not recognise raises an error.  Silently dropping
+%  a construct would produce a document that looks finished and is not.
+
+W = ['xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'];
+M = ['xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"'];
+R = ['xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'];
+
+lines = regexp(mdtext, '\r?\n', 'split');
+n = numel(lines);
+body = {};
+i = 1;
+after_heading = false;
+
+% ------------------------------------------------------- YAML front matter
+if n >= 1 && strcmp(strtrim(lines{1}), '---')
+    j = 2;
+    ttl = ''; aut = '';
+    while j <= n && ~strcmp(strtrim(lines{j}), '---')
+        tok = regexp(lines{j}, '^(\w+):\s*"?(.*?)"?\s*$', 'tokens', 'once');
+        if ~isempty(tok)
+            switch tok{1}
+                case 'title',  ttl = tok{2};
+                case 'author', aut = tok{2};
+            end
+        end
+        j = j + 1;
+    end
+    if ~isempty(ttl)
+        body{end+1} = local_para('Title', local_inline(ttl));
+    end
+    if ~isempty(aut)
+        body{end+1} = local_para('Author', local_inline(aut));
+    end
+    i = j + 1;
+end
+
+% ------------------------------------------------------------ block loop --
+while i <= n
+    ln = lines{i};
+    s = strtrim(ln);
+
+    if isempty(s)
+        i = i + 1;
+        continue
+    end
+
+    % ---- fenced code ------------------------------------------------------
+    % One paragraph for the whole block, with a line break between lines.  A
+    % paragraph per line would carry the style's paragraph spacing into every
+    % line and more than double the page count.
+    if startsWith(s, '```')
+        i = i + 1;
+        code = {};
+        while i <= n && ~startsWith(strtrim(lines{i}), '```')
+            code{end+1} = lines{i}; %#ok<AGROW>
+            i = i + 1;
+        end
+        i = i + 1;
+        body{end+1} = local_code_block(code); %#ok<AGROW>
+        after_heading = false;
+        continue
+    end
+
+    % ---- pipe table -------------------------------------------------------
+    if startsWith(s, '|')
+        rows = {};
+        while i <= n && startsWith(strtrim(lines{i}), '|')
+            rows{end+1} = strtrim(lines{i}); %#ok<AGROW>
+            i = i + 1;
+        end
+        body{end+1} = local_table(rows); %#ok<AGROW>
+        after_heading = false;
+        continue
+    end
+
+    % ---- heading ----------------------------------------------------------
+    h = regexp(s, '^(#{1,6})\s+(.*)$', 'tokens', 'once');
+    if ~isempty(h)
+        lvl = numel(h{1});
+        body{end+1} = local_para(sprintf('Heading%d', lvl), ...
+                                 local_inline(h{2})); %#ok<AGROW>
+        i = i + 1;
+        after_heading = true;
+        continue
+    end
+
+    % ---- display equation on its own line ---------------------------------
+    if startsWith(s, '$$') && endsWith(s, '$$') && numel(s) > 4
+        tex = s(3:end-2);
+        body{end+1} = ['<w:p>' fk_latex2omml(tex, true) '</w:p>']; %#ok<AGROW>
+        i = i + 1;
+        after_heading = false;
+        continue
+    end
+
+    % ---- bullet item ------------------------------------------------------
+    if startsWith(s, '- ')
+        body{end+1} = local_listpara(1001, local_inline(s(3:end))); %#ok<AGROW>
+        i = i + 1;
+        after_heading = false;
+        continue
+    end
+
+    % ---- numbered item ----------------------------------------------------
+    nm = regexp(s, '^\d+\.\s+(.*)$', 'tokens', 'once');
+    if ~isempty(nm)
+        body{end+1} = local_listpara(1002, local_inline(nm{1})); %#ok<AGROW>
+        i = i + 1;
+        after_heading = false;
+        continue
+    end
+
+    % ---- ordinary paragraph, possibly wrapped over several lines ----------
+    buf = {s};
+    i = i + 1;
+    while i <= n
+        s2 = strtrim(lines{i});
+        if isempty(s2) || startsWith(s2, '|') || startsWith(s2, '#') || ...
+           startsWith(s2, '- ') || startsWith(s2, '```') || ...
+           startsWith(s2, '$$') || ~isempty(regexp(s2, '^\d+\.\s', 'once'))
+            break
+        end
+        buf{end+1} = s2; %#ok<AGROW>
+        i = i + 1;
+    end
+    txt = strjoin(buf, ' ');
+    if after_heading, sty = 'FirstParagraph'; else, sty = 'BodyText'; end
+    body{end+1} = local_para(sty, local_inline(txt)); %#ok<AGROW>
+    after_heading = false;
+end
+
+% ---------------------------------------------------------- assemble part --
+sectPr = local_sectpr(template);
+xml = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' ...
+       '<w:document ' W ' ' M ' ' R '><w:body>' ...
+       strjoin(body, '') sectPr '</w:body></w:document>'];
+
+fk_zip_replace(template, outfile, 'word/document.xml', xml);
+fprintf('[docx] %s written, %d block elements\n', outfile, numel(body));
+end
+
+% =========================================================================
+function p = local_para(style, runs)
+p = ['<w:p><w:pPr><w:pStyle w:val="' style '"/></w:pPr>' runs '</w:p>'];
+end
+
+function p = local_listpara(numid, runs)
+p = ['<w:p><w:pPr><w:pStyle w:val="Compact"/><w:numPr>' ...
+     '<w:ilvl w:val="0"/><w:numId w:val="' num2str(numid) '"/>' ...
+     '</w:numPr></w:pPr>' runs '</w:p>'];
+end
+
+function p = local_code_block(codelines)
+runs = '';
+for k = 1:numel(codelines)
+    if k > 1
+        runs = [runs '<w:r><w:br/></w:r>']; %#ok<AGROW>
+    end
+    runs = [runs '<w:r><w:rPr><w:rStyle w:val="VerbatimChar"/></w:rPr>' ...
+            '<w:t xml:space="preserve">' fk_xmlesc(codelines{k}) ...
+            '</w:t></w:r>']; %#ok<AGROW>
+end
+p = ['<w:p><w:pPr><w:pStyle w:val="SourceCode"/></w:pPr>' runs '</w:p>'];
+end
+
+% =========================================================================
+function out = local_inline(s)
+%LOCAL_INLINE  Split a paragraph into runs: maths, bold, code, plain.
+out = '';
+rest = s;
+while ~isempty(rest)
+    % earliest of the four markers
+    iM = regexp(rest, '\$[^\$]+\$', 'once');
+    iB = regexp(rest, '\*\*[^\*]+\*\*', 'once');
+    iC = regexp(rest, '`[^`]+`', 'once');
+    iI = regexp(rest, '(?<!\*)\*[^\*]+\*(?!\*)', 'once');
+    kinds = {'m', 'b', 'c', 'i'};
+    keep = ~cellfun(@isempty, {iM, iB, iC, iI});
+    if ~any(keep)
+        out = [out local_run(rest, '')];
+        return
+    end
+    cc = [iM iB iC iI];         % empties vanish, so cc lines up with kk
+    kk = kinds(keep);
+    [pos, w] = min(cc);
+    kind = kk{w};
+
+    if pos > 1
+        out = [out local_run(rest(1:pos-1), '')];
+    end
+    rest = rest(pos:end);
+    switch kind
+        case 'm'
+            tk = regexp(rest, '^\$([^\$]+)\$', 'tokens', 'once');
+            out = [out fk_latex2omml(tk{1}, false)];
+            rest = rest(numel(tk{1}) + 3:end);
+        case 'b'
+            tk = regexp(rest, '^\*\*([^\*]+)\*\*', 'tokens', 'once');
+            out = [out local_run(tk{1}, '<w:b/>')];
+            rest = rest(numel(tk{1}) + 5:end);
+        case 'c'
+            tk = regexp(rest, '^`([^`]+)`', 'tokens', 'once');
+            out = [out local_run(tk{1}, '<w:rStyle w:val="VerbatimChar"/>')];
+            rest = rest(numel(tk{1}) + 3:end);
+        case 'i'
+            tk = regexp(rest, '^\*([^\*]+)\*', 'tokens', 'once');
+            out = [out local_run(tk{1}, '<w:i/>')];
+            rest = rest(numel(tk{1}) + 3:end);
+    end
+end
+end
+
+function r = local_run(txt, rpr)
+if isempty(txt), r = ''; return; end
+if isempty(rpr)
+    r = ['<w:r><w:t xml:space="preserve">' fk_xmlesc(txt) '</w:t></w:r>'];
+else
+    r = ['<w:r><w:rPr>' rpr '</w:rPr><w:t xml:space="preserve">' ...
+         fk_xmlesc(txt) '</w:t></w:r>'];
+end
+end
+
+% =========================================================================
+function t = local_table(rows)
+%LOCAL_TABLE  A pipe table.  The second row of a markdown table is the
+%             alignment rule and carries no content.
+cells = cell(numel(rows), 1);
+keep = true(numel(rows), 1);
+for k = 1:numel(rows)
+    r = rows{k};
+    r = regexprep(r, '^\|', '');
+    r = regexprep(r, '\|$', '');
+    parts = strsplit(r, '|');
+    parts = cellfun(@strtrim, parts, 'UniformOutput', false);
+    if all(~cellfun(@isempty, regexp(parts, '^:?-{2,}:?$', 'once')))
+        keep(k) = false;
+    end
+    cells{k} = parts;
+end
+cells = cells(keep);
+ncol = max(cellfun(@numel, cells));
+w = floor(9360 / ncol);
+
+grid = '';
+for c = 1:ncol
+    grid = [grid '<w:gridCol w:w="' num2str(w) '"/>']; %#ok<AGROW>
+end
+
+trs = '';
+for k = 1:numel(cells)
+    tcs = '';
+    row = cells{k};
+    for c = 1:ncol
+        if c <= numel(row), txt = row{c}; else, txt = ''; end
+        tcs = [tcs '<w:tc><w:tcPr/><w:p><w:pPr><w:pStyle w:val="Compact"/>' ...
+               '</w:pPr>' local_inline(txt) '</w:p></w:tc>']; %#ok<AGROW>
+    end
+    if k == 1
+        trs = [trs '<w:tr><w:trPr><w:tblHeader w:val="on"/></w:trPr>' tcs '</w:tr>']; %#ok<AGROW>
+    else
+        trs = [trs '<w:tr>' tcs '</w:tr>']; %#ok<AGROW>
+    end
+end
+
+t = ['<w:tbl><w:tblPr><w:tblStyle w:val="Table"/>' ...
+     '<w:tblW w:type="pct" w:w="5000"/><w:tblLayout w:type="fixed"/>' ...
+     '<w:tblLook w:firstRow="1" w:lastRow="0" w:firstColumn="0" ' ...
+     'w:lastColumn="0" w:noHBand="0" w:noVBand="0" w:val="0020"/></w:tblPr>' ...
+     '<w:tblGrid>' grid '</w:tblGrid>' trs '</w:tbl>' ...
+     '<w:p><w:pPr><w:pStyle w:val="BodyText"/></w:pPr></w:p>'];
+end
+
+% =========================================================================
+function sp = local_sectpr(template)
+%LOCAL_SECTPR  Reuse the template's page setup verbatim.
+tmp = tempname;
+mkdir(tmp);
+c = onCleanup(@() rmdir(tmp, 's'));
+unzip(template, tmp);
+d = fileread(fullfile(tmp, 'word', 'document.xml'));
+m = regexp(d, '<w:sectPr[^>]*>.*?</w:sectPr>', 'match', 'once');
+if isempty(m)
+    m = regexp(d, '<w:sectPr[^>]*/>', 'match', 'once');
+end
+if isempty(m)
+    error('fk_md2docx:sectPr', 'template has no sectPr');
+end
+sp = m;
+end
+```
+
+### A.22  `fk_zip_replace.m`
+
+```matlab
+function fk_zip_replace(template, outfile, partname, content)
+%FK_ZIP_REPLACE  Copy a zip package entry by entry, swapping one member.
+%
+%  Used to write a .docx by replacing word/document.xml in a template while
+%  every other part, styles, numbering, theme, fonts, is carried across
+%  untouched.  That is the same discipline this project uses when editing a
+%  Word file rather than rebuilding it.
+%
+%  Two details, both learned the hard way.
+%
+%  Writing goes through the JVM that ships with MATLAB rather than through
+%  zip(), because the package contains [Content_Types].xml and the brackets
+%  are wildcard characters to MATLAB's file matching.
+%
+%  Reading does NOT go through java.io.InputStream.read(byte[]).  MATLAB
+%  passes arrays to Java by value, so the JVM fills its own copy, the caller
+%  gets its buffer back unchanged, and every copied part comes out as a run of
+%  zero bytes.  The document then looks structurally sound and Word refuses
+%  it as corrupt.  The parts are therefore extracted to a temporary folder and
+%  read with fread, which is the direction that works.
+
+outfile = local_abspath(outfile);
+template = local_abspath(template);
+
+tmp = tempname;
+mkdir(tmp);
+c1 = onCleanup(@() rmdir(tmp, 's')); %#ok<NASGU>
+unzip(template, tmp);
+
+names = local_entry_names(template);
+newbytes = unicode2native(content, 'UTF-8');
+
+if exist(outfile, 'file'), delete(outfile); end
+fos = java.io.FileOutputStream(outfile);
+zos = java.util.zip.ZipOutputStream(fos);
+c2 = onCleanup(@() local_close(zos, fos)); %#ok<NASGU>
+
+seen = false;
+for k = 1:numel(names)
+    name = names{k};
+    zos.putNextEntry(java.util.zip.ZipEntry(name));
+    if strcmp(name, partname)
+        bytes = newbytes;
+        seen = true;
+    else
+        bytes = local_readbytes(fullfile(tmp, strrep(name, '/', filesep)));
+    end
+    if ~isempty(bytes)
+        zos.write(typecast(bytes(:)', 'int8'), 0, numel(bytes));
+    end
+    zos.closeEntry();
+end
+if ~seen
+    error('fk_zip_replace:missing', '%s is not in %s', partname, template);
+end
+end
+
+% =========================================================================
+function names = local_entry_names(zipfile)
+zf = java.util.zip.ZipFile(zipfile);
+c = onCleanup(@() zf.close()); %#ok<NASGU>
+names = {};
+en = zf.entries();
+while en.hasMoreElements()
+    e = en.nextElement();
+    if ~e.isDirectory()
+        names{end+1} = char(e.getName()); %#ok<AGROW>
+    end
+end
+end
+
+function b = local_readbytes(path)
+fid = fopen(path, 'r');
+if fid < 0
+    error('fk_zip_replace:read', 'cannot read extracted part %s', path);
+end
+b = fread(fid, inf, '*uint8');
+fclose(fid);
+end
+
+function local_close(zos, fos)
+try, zos.close(); catch, end %#ok<CTCH>
+try, fos.close(); catch, end %#ok<CTCH>
+end
+
+function p = local_abspath(p)
+if isempty(regexp(p, '^([A-Za-z]:|\\\\|/)', 'once'))
+    p = fullfile(pwd, p);
+end
+end
+```
+
+### A.23  `fk_make_template.m`
+
+```matlab
+function fk_make_template(src, dst)
+%FK_MAKE_TEMPLATE  Strip a .docx down to its styles, to serve as a template.
+%
+%  fk_make_template(src, dst)
+%
+%  Keeps every part of src except the body of word/document.xml, which is
+%  emptied apart from the section properties.  The result carries the styles,
+%  numbering definitions, theme, fonts and page setup, and nothing else.
+%
+%  The template in manuscript/template.docx was made this way and is committed
+%  so that a reader does not have to reproduce it; this function is here so
+%  that they can.
+
+if nargin < 2
+    cfg = fk_config();
+    man = fullfile(cfg.dir_code, '..', 'manuscript');
+    if nargin < 1
+        src = fullfile(man, 'Zeqiraj_FusheKuqe_OED_manuscript.docx');
+    end
+    dst = fullfile(man, 'template.docx');
+end
+
+tmp = tempname;
+mkdir(tmp);
+c = onCleanup(@() rmdir(tmp, 's')); %#ok<NASGU>
+unzip(src, tmp);
+d = fileread(fullfile(tmp, 'word', 'document.xml'));
+
+hdr = regexp(d, '^.*?<w:body>', 'match', 'once');
+if isempty(hdr)
+    error('fk_make_template:body', '%s has no w:body', src);
+end
+sp = regexp(d, '<w:sectPr[^>]*>.*?</w:sectPr>', 'match', 'once');
+if isempty(sp)
+    sp = regexp(d, '<w:sectPr[^>]*/>', 'match', 'once');
+end
+
+xml = [hdr sp '</w:body></w:document>'];
+fk_zip_replace(src, dst, 'word/document.xml', xml);
+
+z = java.util.zip.ZipFile(dst);
+np = 0;
+en = z.entries();
+while en.hasMoreElements(), en.nextElement(); np = np + 1; end
+z.close();
+fprintf('[template] %s written, %d parts, body emptied\n', dst, np);
+end
+```
+
+### A.24  `fk_build_docx.m`
+
+```matlab
+function fk_build_docx()
+%FK_BUILD_DOCX  Assemble the submission documents.
+%
+%  Produces, in manuscript/:
+%    Zeqiraj_FusheKuqe_OED_manuscript.docx   the paper, MATLAB listings after
+%                                            the references and nothing else
+%    Highlights.docx
+%    Cover_Letter.docx
+%
+%  The listings are read from the .m files themselves, so the appendix cannot
+%  drift from the code that produced the numbers, and each is identified by a
+%  SHA-256 prefix that fk_verify_docx checks against the file on disk.
+%
+%  Run fk_fill_manuscript first.
+
+cfg = fk_config();
+man = fullfile(cfg.dir_code, '..', 'manuscript');
+src = fullfile(man, 'manuscript_filled.md');
+tpl = fullfile(man, 'template.docx');
+out = fullfile(man, 'Zeqiraj_FusheKuqe_OED_manuscript.docx');
+
+if ~exist(src, 'file')
+    error('fk_build_docx:missing', 'run fk_fill_manuscript first: %s', src);
+end
+if ~exist(tpl, 'file')
+    error('fk_build_docx:template', 'no template: %s', tpl);
+end
+
+fk_check_omml(src);
+
+% ------------------------------------------------- the listings, in order --
+order = {'fk_config.m', 'fk_load_data.m', 'fk_predictability.m', ...
+         'fk_build_grid.m', 'fk_prior_field.m', 'fk_forward.m', ...
+         'fk_calibrate.m', 'fk_sensitivity.m', 'fk_design.m', ...
+         'oed_local.m', 'fk_particles.m', 'mrva_replicate.m', ...
+         'fk_sweep.m', 'fk_write_results.m', 'fk_figures.m', ...
+         'fk_prepare_data.m', 'fk_fill_manuscript.m', 'fk_latex2omml.m', ...
+         'fk_xmlesc.m', 'fk_check_omml.m', 'fk_md2docx.m', ...
+         'fk_zip_replace.m', 'fk_make_template.m', 'fk_build_docx.m', ...
+         'fk_verify_docx.m', 'fk_sha256.m', 'run_all.m'};
+
+body = fileread(src);
+parts = {strtrim(body), '', '', '## Appendix A. MATLAB code', '', ...
+   ['The listings below are the complete pipeline, in the order it runs ' ...
+    'them. They are reproduced verbatim from the released repository; the ' ...
+    'sixteen-character SHA-256 prefix given with each file identifies the ' ...
+    'exact version that produced every number in this paper. Nothing ' ...
+    'follows the listings.'], ''};
+
+tbl = {'| File | Lines | SHA-256 prefix |', '|---|---|---|'};
+lst = {};
+for k = 1:numel(order)
+    path = fullfile(cfg.dir_code, order{k});
+    if ~exist(path, 'file')
+        error('fk_build_docx:listing', 'missing listing %s', order{k});
+    end
+    code = fileread(path);
+    nl = numel(strfind(code, newline)) + 1;
+    dg = fk_sha256(path);
+    tbl{end+1} = sprintf('| `%s` | %d | `%s` |', order{k}, nl, dg); %#ok<AGROW>
+    lst{end+1} = sprintf('### A.%d  `%s`', k, order{k}); %#ok<AGROW>
+    lst{end+1} = ''; %#ok<AGROW>
+    lst{end+1} = '```matlab'; %#ok<AGROW>
+    lst{end+1} = strip_trailing(code); %#ok<AGROW>
+    lst{end+1} = '```'; %#ok<AGROW>
+    lst{end+1} = ''; %#ok<AGROW>
+    fprintf('%-24s %5d lines  %s\n', order{k}, nl, dg);
+end
+
+full = strjoin([parts, tbl, {''}, lst], newline);
+fullmd = fullfile(man, 'manuscript_with_code.md');
+fid = fopen(fullmd, 'w', 'n', 'UTF-8');
+fwrite(fid, unicode2native(full, 'UTF-8'));
+fclose(fid);
+
+fk_md2docx(full, tpl, out);
+
+% --------------------------------------------- highlights and cover letter --
+hi = regexp(body, '## Highlights\s*(.*?)\n## ', 'tokens', 'once');
+if ~isempty(hi)
+    hmd = ['## Highlights' newline newline strtrim(hi{1}) newline];
+    fk_md2docx(hmd, tpl, fullfile(man, 'Highlights.docx'));
+end
+cl = fullfile(man, 'cover_letter.md');
+if exist(cl, 'file')
+    fk_md2docx(fileread(cl), tpl, fullfile(man, 'Cover_Letter.docx'));
+end
+end
+
+% =========================================================================
+function s = strip_trailing(s)
+while ~isempty(s) && (s(end) == newline || s(end) == char(13))
+    s(end) = [];
+end
+end
+```
+
+### A.25  `fk_verify_docx.m`
+
+```matlab
+function fk_verify_docx(docx)
+%FK_VERIFY_DOCX  Check the submission document before it goes anywhere.
+%
+%  Six checks, each of which has caught something at least once:
+%
+%    1. Nothing but the MATLAB listings follows the reference list.  That is
+%       the one structural requirement the document has.
+%    2. No unresolved {{placeholder}} survived into the file.
+%    3. No em dash anywhere.
+%    4. No control character anywhere.  This check exists because one reached
+%       a delivered document on 12 September 2026: a stray byte turned
+%       $\alpha_L$ into the word "lpha", and the converter dropped it in
+%       silence.
+%    5. No stray dollar sign, which is what an unconverted equation leaves.
+%    6. Every listing in the appendix matches the file on disk, compared by
+%       the SHA-256 prefix printed beside it.
+
+if nargin < 1
+    cfg = fk_config();
+    docx = fullfile(cfg.dir_code, '..', 'manuscript', ...
+                    'Zeqiraj_FusheKuqe_OED_manuscript.docx');
+end
+if ~exist(docx, 'file')
+    error('fk_verify_docx:missing', 'no document at %s', docx);
+end
+
+[paras, styles, text] = local_paragraphs(docx);
+fails = {};
+
+% ---- 1. structure ---------------------------------------------------------
+iref = find(strcmpi(strtrim(paras), 'references'), 1);
+iapp = find(startsWith(lower(strtrim(paras)), 'appendix a'), 1);
+if isempty(iref)
+    fails{end+1} = 'no References heading';
+elseif isempty(iapp)
+    fails{end+1} = 'no Appendix A heading';
+elseif iapp < iref
+    fails{end+1} = 'the appendix precedes the references';
+else
+    fprintf(['[verify] %d paragraphs, references at %d, appendix at %d, ' ...
+             '%d after it\n'], numel(paras), iref, iapp, ...
+            numel(paras) - iapp);
+end
+
+% The prose checks below apply to the paper, not to the code listings, which
+% legitimately contain dollar signs and any character a MATLAB file may hold.
+if ~isempty(iapp)
+    prose = strjoin(paras(1:iapp), newline);
+else
+    prose = text;
+end
+
+% ---- 2. placeholders ------------------------------------------------------
+ph = regexp(prose, '\{\{\w+\}\}', 'match');
+if ~isempty(ph)
+    fails{end+1} = ['unresolved placeholders: ' strjoin(unique(ph), ', ')];
+end
+
+% ---- 3. em dashes ---------------------------------------------------------
+nem = sum(double(prose) == 8212);
+if nem > 0
+    fails{end+1} = sprintf('%d em dash(es)', nem);
+end
+
+% ---- 4. control characters ------------------------------------------------
+ctrl = double(text) < 32 & ~ismember(double(text), [9 10 13]);
+if any(ctrl)
+    j = find(ctrl, 1);
+    fails{end+1} = sprintf('control character U+%04X near "%s"', ...
+        double(text(j)), text(max(1, j-40):min(numel(text), j+20)));
+end
+
+% ---- 5. stray dollar signs ------------------------------------------------
+% Equations become OMML, which carries no dollar sign; one left in the text
+% means an equation was not converted.
+nd = sum(double(prose) == 36);
+if nd > 0
+    j = find(double(prose) == 36, 1);
+    fails{end+1} = sprintf('%d dollar sign(s), first near "%s"', nd, ...
+        prose(max(1, j-50):min(numel(prose), j+30)));
+end
+
+% ---- 6. listings match the code -------------------------------------------
+cfg = fk_config();
+tok = regexp(text, '([A-Za-z0-9_]+\.m)\s+(\d+)\s+([0-9a-f]{16})', 'tokens');
+nchk = 0;
+for k = 1:numel(tok)
+    name = tok{k}{1};
+    dg = tok{k}{3};
+    path = fullfile(cfg.dir_code, name);
+    if ~exist(path, 'file')
+        fails{end+1} = ['listed file not on disk: ' name]; %#ok<AGROW>
+        continue
+    end
+    real = fk_sha256(path);
+    if ~strcmp(real, dg)
+        fails{end+1} = sprintf('listing out of date: %s (document %s, disk %s)', ...
+                               name, dg, real); %#ok<AGROW>
+    end
+    nchk = nchk + 1;
+end
+fprintf('[verify] %d listing checksums checked\n', nchk);
+if nchk == 0
+    fails{end+1} = 'no listing checksums found';
+end
+
+% ---- report ---------------------------------------------------------------
+if ~isempty(fails)
+    fprintf('\n[verify] FAILED\n');
+    for k = 1:numel(fails)
+        fprintf('  - %s\n', fails{k});
+    end
+    error('fk_verify_docx:failed', '%d check(s) failed', numel(fails));
+end
+fprintf('[verify] all checks passed\n');
+end
+
+% =========================================================================
+function [paras, styles, text] = local_paragraphs(docx)
+tmp = tempname;
+mkdir(tmp);
+c = onCleanup(@() rmdir(tmp, 's')); %#ok<NASGU>
+unzip(docx, tmp);
+x = fileread(fullfile(tmp, 'word', 'document.xml'));
+
+pieces = regexp(x, '<w:p[ >].*?</w:p>|<w:p/>', 'match');
+paras = cell(numel(pieces), 1);
+styles = cell(numel(pieces), 1);
+for k = 1:numel(pieces)
+    s = pieces{k};
+    t = regexp(s, '<(?:w|m):t[^>]*>(.*?)</(?:w|m):t>', 'tokens');
+    txt = '';
+    for j = 1:numel(t)
+        txt = [txt local_unesc(t{j}{1})]; %#ok<AGROW>
+    end
+    paras{k} = txt;
+    st = regexp(s, '<w:pStyle w:val="([^"]+)"', 'tokens', 'once');
+    if isempty(st), styles{k} = ''; else, styles{k} = st{1}; end
+end
+text = strjoin(paras, newline);
+end
+
+function s = local_unesc(s)
+s = strrep(s, '&lt;', '<');
+s = strrep(s, '&gt;', '>');
+s = strrep(s, '&quot;', '"');
+s = strrep(s, '&apos;', '''');
+s = strrep(s, '&amp;', '&');
+end
+```
+
+### A.26  `fk_sha256.m`
+
+```matlab
+function h = fk_sha256(path, nchar)
+%FK_SHA256  Hex SHA-256 of a file, truncated to nchar characters (default 16).
+%
+%  Through the JVM that ships with MATLAB, so no toolbox and no shell call.
+
+if nargin < 2, nchar = 16; end
+fid = fopen(path, 'r');
+if fid < 0, error('fk_sha256:open', 'cannot read %s', path); end
+bytes = fread(fid, inf, '*uint8');
+fclose(fid);
+
+md = java.security.MessageDigest.getInstance('SHA-256');
+md.update(typecast(bytes, 'int8'));
+d = typecast(md.digest(), 'uint8');
+h = lower(reshape(dec2hex(d, 2)', 1, []));
+h = h(1:min(nchar, numel(h)));
+end
+```
+
+### A.27  `run_all.m`
 
 ```matlab
 function R = run_all()

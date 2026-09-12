@@ -1,6 +1,6 @@
 {
-  "source_workbook": "C:/Users/d_zeq/OneDrive/Desktop/Fushe_Kuqe_All_Data.xlsx",
-  "source_mrva": "C:/Users/d_zeq/OneDrive/Desktop/PROJEKTE 2 ARTIKUJ/AKUIFER TE DHENA TE NDRYSHME FUSHE KUQE TE DHENA/Pugh2023_MRVA_44wells_REAL.csv",
+  "source_workbook": "C:\\Users\\d_zeq\\OneDrive\\Desktop\\Fushe_Kuqe_All_Data.xlsx",
+  "source_mrva": "C:\\Users\\d_zeq\\OneDrive\\Desktop\\PROJEKTE 2 ARTIKUJ\\AKUIFER TE DHENA TE NDRYSHME FUSHE KUQE TE DHENA\\Pugh2023_MRVA_44wells_REAL.csv",
   "n_wells_total": 180,
   "n_wells_with_K": 43,
   "n_wells_with_NO3": 31,
@@ -8,15 +8,15 @@
   "n_inside_with_K": 32,
   "n_inside_with_NO3": 24,
   "n_boundary_vertices": 3411,
-  "lithology_of_K_wells": {
-    "Gravel - coarse-grained": 13,
-    "Gravel - medium-grained": 22,
-    "Gravel - fine-grained": 8
-  },
   "n_mrva": 44,
-  "swi_sheets": {
-    "swi_chemistry.csv": 4,
-    "swi_cl_trend.csv": 2,
-    "swi_facts.csv": 19
+  "swi_rows": [
+    4,
+    2,
+    19
+  ],
+  "lithology_of_K_wells": {
+    "Gravel_Coarse_grained": 13,
+    "Gravel_Fine_grained": 8,
+    "Gravel_Medium_grained": 22
   }
 }

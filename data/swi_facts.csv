@@ -1,20 +1,20 @@
-Parameter,Value,Unit / note
-Aquifer type,Confined multilayer alluvial,gravel-sand layers + silt-clay intercalations
-Recharge sources,"Mat river (N), Droja river (S)",river-bed infiltration + rainfall
-Natural discharge,Adriatic Sea,western boundary
-Groundwater flow direction,NE -> SW,from Mat outlet to coast
-Seawater wedge direction,SW (coast) -> NE,toward Gorre / Fushe Kuqe pumping stations
-Gravel-sand thickness (East),5 - 10,m
-Gravel-sand thickness (West),180 - 200,m
-Silt-clay cover thickness (West),30 - 40,m
-Max alluvial thickness,~270,m (Mat delta)
-Number of gravelly aquifer layers,up to 4,Eftimi 2003
-Piezometric head (river outlet),~0,m a.s.l.
-Piezometric head (littoral),~3,m a.s.l.
-Head decline (Fushe Kuqe sector),8.0 -> 1.5,m above surface (Tartari 2001)
-Area affected by SWI,~15,% (upper aquifer layer)
-Seawater fraction (recharge zone),0.0,%
-Seawater fraction (coastal sectors),~5.5,%
-"Max salinity, first (shallow) aquifer",1500,mg/L (S of well field to Droja)
-"Max salinity, second (deep) aquifer",3500,mg/L (Adriatic sector)
-Hydrochemical evolution,Ca-Mg-HCO3 (NE) -> Mg-Ca-HCO3 -> Na-HCO3 -> Na-Cl (SW),Piper / facies (Fig. 4)
+Parameter,Value,Unit_Note
+"Aquifer type","Confined multilayer alluvial",gravel-sand layers + silt-clay intercalations
+"Recharge sources","Mat river (N), Droja river (S)",river-bed infiltration + rainfall
+"Natural discharge","Adriatic Sea",western boundary
+"Groundwater flow direction","NE -> SW",from Mat outlet to coast
+"Seawater wedge direction","SW (coast) -> NE",toward Gorre / Fushe Kuqe pumping stations
+"Gravel-sand thickness (East)","5 - 10",m
+"Gravel-sand thickness (West)","180 - 200",m
+"Silt-clay cover thickness (West)","30 - 40",m
+"Max alluvial thickness","~270",m (Mat delta)
+"Number of gravelly aquifer layers","up to 4",Eftimi 2003
+"Piezometric head (river outlet)","~0",m a.s.l.
+"Piezometric head (littoral)","~3",m a.s.l.
+"Head decline (Fushe Kuqe sector)","8.0 -> 1.5",m above surface (Tartari 2001)
+"Area affected by SWI","~15",% (upper aquifer layer)
+"Seawater fraction (recharge zone)","0.0",%
+"Seawater fraction (coastal sectors)","~5.5",%
+"Max salinity, first (shallow) aquifer","1500",mg/L (S of well field to Droja)
+"Max salinity, second (deep) aquifer","3500",mg/L (Adriatic sector)
+"Hydrochemical evolution","Ca-Mg-HCO3 (NE) -> Mg-Ca-HCO3 -> Na-HCO3 -> Na-Cl (SW)",Piper / facies (Fig. 4)

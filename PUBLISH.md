@@ -62,18 +62,17 @@ licence, keywords and the four related identifiers.
 ## 4. Put the real URLs into the manuscript
 
 The two links are the only values in the paper that do not come out of a run,
-so they are supplied from the environment rather than edited into the text:
+so they are passed as arguments rather than edited into the text. The GitHub
+URL is already the default; only the Zenodo DOI has to be supplied:
 
 ```bash
-cd "C:/Users/d_zeq/OneDrive/Desktop/PROJEKTE 2 ARTIKUJ/MREKULLIA/Q1_RIPUNIM_2026/code"
-FK_GITHUB_URL=https://github.com/<user>/fushe-kuqe-oed \
-FK_ZENODO_DOI=https://doi.org/10.5281/zenodo.<id> \
-python fill_manuscript.py && python build_docx.py && python verify_docx.py
+cd "C:/Users/d_zeq/OneDrive/Desktop/PROJEKTE 2 ARTIKUJ/MREKULLIA/Q1_RIPUNIM_2026/code" && matlab -batch "fk_fill_manuscript('', 'https://doi.org/10.5281/zenodo.NRI'); fk_build_docx; fk_verify_docx"
 ```
 
-`verify_docx.py` refuses the document if a placeholder survived, if anything
-other than the MATLAB listings follows the references, if an em dash appears,
-or if any listing has drifted from the file on disk.
+`fk_verify_docx` refuses the document if a placeholder survived, if anything
+other than the MATLAB listings follows the references, if an em dash, a control
+character or a stray dollar sign appears, or if any listing has drifted from
+the file on disk.
 
 ## 5. What to submit
 

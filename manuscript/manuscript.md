@@ -115,7 +115,7 @@ truncated at $m =$ {{n_kl}} modes holding {{kl_var}} per cent of the prior varia
 
 ### 4.2 Why porosity is invisible at steady state
 
-The domain is discretised on a grid aligned with the regional flow azimuth, which makes the dispersion tensor diagonal in grid coordinates and removes the cross-derivative terms. The grid has {{nx}} by {{ny}} cells of {{dx}} m with {{n_active}} active, covering {{area_grid}} km² against {{area_poly}} km² for the digitised polygon. Advection is first-order upwind, whose numerical dispersion is equivalent to a dispersivity of half a cell, 50 m, or a tenth of the baseline $lpha_L$. The dispersivity sweep of Section 6.8 spans several times that error, so the conclusions do not rest on the discretisation.
+The domain is discretised on a grid aligned with the regional flow azimuth, which makes the dispersion tensor diagonal in grid coordinates and removes the cross-derivative terms. The grid has {{nx}} by {{ny}} cells of {{dx}} m with {{n_active}} active, covering {{area_grid}} km² against {{area_poly}} km² for the digitised polygon. Advection is first-order upwind, whose numerical dispersion is equivalent to a dispersivity of half a cell, 50 m, or a tenth of the baseline $\alpha_L$. The dispersivity sweep of Section 6.8 spans several times that error, so the conclusions do not rest on the discretisation.
 
 The gradient is not measurable from the workbook and is derived from the published mean seepage velocity of 2.1 m d⁻¹ and the measured mean conductivity, $i = v\bar{n}_e/\bar{K} =$ {{gradient}}, giving a uniform regional Darcy flux $q_0 =$ {{q0}} m d⁻¹. The depth-averaged transport equation is
 

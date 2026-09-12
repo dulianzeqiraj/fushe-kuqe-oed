@@ -57,7 +57,7 @@
 [fwd] interior faces: 34171 along flow, 34214 across flow
 [cal] 24 observation wells inside the domain, max well-to-cell 64 m
 [cal] null model with the loading shaped as DRASTIC^kappa: best R2 0.037 at kappa 1.00, T0 200 d
-[cal] 7 source-basis marches of 400 steps in 43 s
+[cal] 7 source-basis marches of 400 steps in 40 s
 [cal] onset time T0 = 7000 d (19.2 yr), RMSE 4.422 mg/L, R2 0.492, adjusted R2 0.221
 [cal]   beta(1        ) = -8.9120e-04
 [cal]   beta(xi       ) = +8.5929e-03
@@ -76,12 +76,12 @@
 [sens] 150 KL modes, 27 time steps to T0 = 5400 d
 [sens] base field at T0: 0.000 - 32.188 mg/L
 [sens] mode 25/150, 11 s elapsed
-[sens] mode 50/150, 22 s elapsed
-[sens] mode 75/150, 34 s elapsed
-[sens] mode 100/150, 46 s elapsed
-[sens] mode 125/150, 58 s elapsed
-[sens] mode 150/150, 69 s elapsed
-[sens] Jacobian built in 69 s
+[sens] mode 50/150, 21 s elapsed
+[sens] mode 75/150, 31 s elapsed
+[sens] mode 100/150, 42 s elapsed
+[sens] mode 125/150, 52 s elapsed
+[sens] mode 150/150, 63 s elapsed
+[sens] Jacobian built in 63 s
 [sens] finite-difference check on mode 3, step 3.404e-01: relative difference 9.642e-03
 [sens] finite-difference check on mode 3, step 6.808e-02: relative difference 1.930e-03
 [sens] finite-difference check on mode 3, step 1.362e-02: relative difference 3.861e-04
@@ -121,10 +121,9 @@
 ===== 8. posterior sampling =====
 [part] Gauss-Newton MAP reached in 12 iterations, F = 238.9159
 [part] condition number of the Gauss-Newton Hessian 6.271e+01
-[part] descent to a relative Riemannian gradient of 1e-06: [part] SIR from the prior with M = 500: normalised ESS 0.719
-[part] 676 forward transport solves in total
-
-===== 9. independent[part] SIR from the prior with M = 500: normalised ESS 0.719
+[part] descent to a relative Riemannian gradient of 1e-06: natural 1 iterations, Euclidean 686, ratio 686.0 (sqrt(kappa) = 7.9)
+[part] implicit sampling with M = 50: normalised ESS 0.989
+[part] SIR from the prior with M = 500: normalised ESS 0.719
 [part] 676 forward transport solves in total
 
 ===== 9. independent replication on the USGS MRVA set =====
@@ -157,9 +156,9 @@
 [sweep] alphaL  250 m : observation share 3.13e-05, R = 0.168, median separation 0 m
 [sweep] alphaL  500 m : observation share 5.05e-05, R = 0.094, median separation 224 m
 [sweep] alphaL 1000 m : observation share 9.95e-05, R = 0.049, median separation 300 m
-[out] results/results.json written (10384 characters)
+[out] results/results.json written (10383 characters)
 
-finished in 1441 s
+finished in 959 s
 
 ans = 
 
@@ -178,7 +177,7 @@ ans =
                Par: [11 struct]
                  M: [11 struct]
                 Sw: [11 struct]
-         runtime_s: 1.4413e+03
+         runtime_s: 959.1814
     matlab_version: '26.1.0.3346908 (R2026a) Update 5'
-          run_date: '2026-09-12 13:27:04'
+          run_date: '2026-09-12 15:31:17'
 
