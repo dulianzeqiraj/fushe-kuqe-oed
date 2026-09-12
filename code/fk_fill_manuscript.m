@@ -4,6 +4,10 @@ function fk_fill_manuscript(github_url, zenodo_doi)
 %  fk_fill_manuscript()
 %  fk_fill_manuscript(github_url, zenodo_doi)
 %
+%  The Zenodo default is the concept DOI, which always resolves to the latest
+%  archived version, rather than a version DOI, which would pin the paper to
+%  an archive made before the paper itself carried the DOI.
+%
 %  Substitutes every {{placeholder}} in manuscript/manuscript.md with a value
 %  taken from results/results.json and writes manuscript/manuscript_filled.md.
 %  It refuses to write anything if a placeholder has no value behind it, and
@@ -28,7 +32,7 @@ if nargin < 1 || isempty(github_url)
     github_url = 'https://github.com/dulianzeqiraj/fushe-kuqe-oed';
 end
 if nargin < 2 || isempty(zenodo_doi)
-    zenodo_doi = 'https://doi.org/10.5281/zenodo.PLACEHOLDER';
+    zenodo_doi = 'https://doi.org/10.5281/zenodo.22726726';
 end
 
 r = jsondecode(fileread(res));

@@ -368,7 +368,7 @@ The hydrogeological data were compiled from records of the Albanian Geological S
 The complete package, comprising the field data in flat form, the MATLAB pipeline, the results file every number in this paper is quoted from, and the scripts that draw every figure, is at
 
 - GitHub: https://github.com/dulianzeqiraj/fushe-kuqe-oed
-- Zenodo (archived release): https://doi.org/10.5281/zenodo.PLACEHOLDER
+- Zenodo (archived release): https://doi.org/10.5281/zenodo.22726726
 
 One command reproduces everything reported here. The primary sources are cited in Section 2.
 

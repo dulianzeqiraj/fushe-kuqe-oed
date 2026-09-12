@@ -1,5 +1,7 @@
 # Information-geometric monitoring network design for the Fushë-Kuqe alluvial aquifer
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22726726.svg)](https://doi.org/10.5281/zenodo.22726726)
+
 Code and data for the manuscript
 
 > Zeqiraj, D. *What is a nitrate measurement worth? Fisher information and

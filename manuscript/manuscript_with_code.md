@@ -368,7 +368,7 @@ The hydrogeological data were compiled from records of the Albanian Geological S
 The complete package, comprising the field data in flat form, the MATLAB pipeline, the results file every number in this paper is quoted from, and the scripts that draw every figure, is at
 
 - GitHub: https://github.com/dulianzeqiraj/fushe-kuqe-oed
-- Zenodo (archived release): https://doi.org/10.5281/zenodo.PLACEHOLDER
+- Zenodo (archived release): https://doi.org/10.5281/zenodo.22726726
 
 One command reproduces everything reported here. The primary sources are cited in Section 2.
 
@@ -465,7 +465,7 @@ The listings below are the complete pipeline, in the order it runs them. They ar
 | `fk_write_results.m` | 203 | `14dda76387c28cdf` |
 | `fk_figures.m` | 291 | `4d79a9be94d6296a` |
 | `fk_prepare_data.m` | 154 | `d70f3c35185694d8` |
-| `fk_fill_manuscript.m` | 363 | `4ecaff890d0ead90` |
+| `fk_fill_manuscript.m` | 367 | `4825be3ee4e50d15` |
 | `fk_latex2omml.m` | 369 | `1c63f0bdb804d970` |
 | `fk_xmlesc.m` | 9 | `f33903379adb07d1` |
 | `fk_check_omml.m` | 48 | `0aaec357da997185` |
@@ -3015,6 +3015,10 @@ function fk_fill_manuscript(github_url, zenodo_doi)
 %  fk_fill_manuscript()
 %  fk_fill_manuscript(github_url, zenodo_doi)
 %
+%  The Zenodo default is the concept DOI, which always resolves to the latest
+%  archived version, rather than a version DOI, which would pin the paper to
+%  an archive made before the paper itself carried the DOI.
+%
 %  Substitutes every {{placeholder}} in manuscript/manuscript.md with a value
 %  taken from results/results.json and writes manuscript/manuscript_filled.md.
 %  It refuses to write anything if a placeholder has no value behind it, and
@@ -3039,7 +3043,7 @@ if nargin < 1 || isempty(github_url)
     github_url = 'https://github.com/dulianzeqiraj/fushe-kuqe-oed';
 end
 if nargin < 2 || isempty(zenodo_doi)
-    zenodo_doi = 'https://doi.org/10.5281/zenodo.PLACEHOLDER';
+    zenodo_doi = 'https://doi.org/10.5281/zenodo.22726726';
 end
 
 r = jsondecode(fileread(res));

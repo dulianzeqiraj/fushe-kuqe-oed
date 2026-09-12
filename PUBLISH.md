@@ -48,8 +48,22 @@ git push -u origin main
 
 ## 3. Zenodo
 
-Link the GitHub account at <https://zenodo.org/account/settings/github/>,
-switch the repository on, then cut a release:
+Done on 12 September 2026. The archive is
+
+- concept DOI, always the latest version: <https://doi.org/10.5281/zenodo.22726726>
+- version DOI for v1.0.0: <https://doi.org/10.5281/zenodo.22726727>
+
+The manuscript cites the concept DOI, so it stays valid as versions are added.
+
+One thing to know if this is ever repeated on a new repository. Zenodo archives
+only releases made after the repository is switched on, and its repository list
+comes from a cached sync, so a repository created the same day will not appear
+until Sync now is pressed. The first three releases here produced nothing
+because the Zenodo account was still linked to an older GitHub account, and it
+could not see this repository at all.
+
+To cut a further version: link the GitHub account at
+<https://zenodo.org/account/settings/github/>, check the repository is on, then
 
 ```bash
 git tag -a v1.0.0 -m "Version accompanying the submitted manuscript"
