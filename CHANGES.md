@@ -124,6 +124,24 @@ finished document for control characters and for stray dollar signs, the latter
 being what an unconverted equation leaves behind. Both checks are in the
 listings; neither existed when the defect shipped.
 
+## The figures were missing from the document, and now are not
+
+The first builds carried the figure captions and none of the figures. The
+document said nothing about it: captions read normally, and the count of
+tables and equations was right, so every check passed. He caught it.
+
+The document writer now embeds pictures. `fk_md2docx.m` understands
+`![alt](path)` and writes the drawing markup, adds the image parts, amends the
+relationships and declares the PNG content type; `fk_png_size.m` reads the
+dimensions so a figure is set to the text measure with its aspect preserved;
+`fk_zip_write.m` replaces the old single-part writer so that parts can be added
+as well as replaced. `fk_verify_docx.m` now counts pictures against captions
+and fails if any caption has none.
+
+The figures sit in a Figures section after the CRediT statement and before the
+references, because after the references the document carries nothing but the
+MATLAB listings.
+
 ## Provenance of manuscript/template.docx
 
 The template carries the styles, numbering, theme and page setup and no content.

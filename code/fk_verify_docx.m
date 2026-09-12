@@ -14,6 +14,9 @@ function fk_verify_docx(docx)
 %    5. No stray dollar sign, which is what an unconverted equation leaves.
 %    6. Every listing in the appendix matches the file on disk, compared by
 %       the SHA-256 prefix printed beside it.
+%    7. Every figure caption has a picture above it.  This check exists
+%       because the first builds carried the captions and none of the
+%       figures, and nothing in the document said so.
 
 if nargin < 1
     cfg = fk_config();
@@ -104,6 +107,19 @@ if nchk == 0
     fails{end+1} = 'no listing checksums found';
 end
 
+% ---- 7. figures present ---------------------------------------------------
+raw = local_rawxml(docx);
+nimg = numel(strfind(raw, '<w:drawing>'));
+ncap = sum(cellfun(@(t) ~isempty(regexp(strtrim(t), ...
+           '^(Figure \d+\.|Graphical abstract\.)', 'once')), paras));
+fprintf('[verify] %d figures embedded, %d captions\n', nimg, ncap);
+if ncap == 0
+    fails{end+1} = 'no figure captions found';
+elseif nimg < ncap
+    fails{end+1} = sprintf('%d captions but only %d figures embedded', ...
+                           ncap, nimg);
+end
+
 % ---- report ---------------------------------------------------------------
 if ~isempty(fails)
     fprintf('\n[verify] FAILED\n');
@@ -138,6 +154,14 @@ for k = 1:numel(pieces)
     if isempty(st), styles{k} = ''; else, styles{k} = st{1}; end
 end
 text = strjoin(paras, newline);
+end
+
+function x = local_rawxml(docx)
+tmp = tempname;
+mkdir(tmp);
+c = onCleanup(@() rmdir(tmp, 's')); %#ok<NASGU>
+unzip(docx, tmp);
+x = fileread(fullfile(tmp, 'word', 'document.xml'));
 end
 
 function s = local_unesc(s)

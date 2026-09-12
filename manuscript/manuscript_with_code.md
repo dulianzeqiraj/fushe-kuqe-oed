@@ -380,21 +380,37 @@ The author declares no competing interests.
 
 Dulian Zeqiraj: conceptualization, methodology, software, formal analysis, investigation, data curation, writing, visualization.
 
-## Figure captions
+## Figures
+
+![Figure 1](../figures/fig1_study_area.png)
 
 **Figure 1.** The Fushë-Kuqe aquifer. (a) The 3411-vertex digitised boundary with all 180 monitoring points, the 43 carrying a pumping-test conductivity and the 31 carrying a nitrate concentration. (b) The DRASTIC vulnerability field kriged from all 180 points, with the regional flow direction reported by Cenameri and Beqiraj (2016). (c) The effective-porosity prior, keyed on measured $\log_{10}K$ and scaled to the published network statistics.
 
+![Figure 2](../figures/fig2_predictability.png)
+
 **Figure 2.** Nothing predicts a held-out nitrate well. (a) Leave-one-out $R^2$ for every method tested, against the network-mean baseline at zero. (b) Modelled against observed nitrate, in sample and under leave-one-out, with the 1:1 line.
+
+![Figure 3](../figures/fig3_prior_and_loading.png)
 
 **Figure 3.** Prior and loading. (a) The Karhunen-Loève spectrum of the prior covariance. (b) The empirical variogram of the 43 measured $\log_{10}K$ values with the fitted exponential model. (c) The loading field estimated from the 24 nitrate observations, with its fitted onset time.
 
+![Figure 4](../figures/fig4_information.png)
+
 **Figure 4.** What the existing network buys. (a) Modelled nitrate at the fitted onset time. (b) Prior standard deviation of effective porosity. (c) The reduction in that standard deviation produced by assimilating all 24 nitrate observations, on the same colour scale.
+
+![Figure 5](../figures/fig5_transport_design.png)
 
 **Figure 5.** Design with transport observations. (a) The one-shot variance gain, with the sites the unconstrained greedy sequence returns: 5 wells within 283 m. (b) The two criteria under a minimum separation of 2057 m, over the vulnerability field. (c) The standard deviation of the vulnerability-weighted arrival time against the number of wells added.
 
+![Figure 6](../figures/fig6_local_design_and_replication.png)
+
 **Figure 6.** Design with characterisation points, where the criterion matters. (a) The two designs at Fushë-Kuqe over the vulnerability field. (b) Variance of the goal functional relative to its prior value, at both sites and under both criteria. (c) The 44 USGS wells of the Mississippi Alluvial Plain with the two designs.
 
+![Figure 7](../figures/fig7_sampling_and_sensitivity.png)
+
 **Figure 7.** Sampling and sensitivity. (a) Normalised effective sample size for implicit sampling and for sequential importance resampling from the prior. (b) The information-equivalence factor against nitrate measurement error, with unity marked. (c) The same against longitudinal dispersivity. (d) Median separation of the two designs and the goal-oriented advantage against the vulnerability exponent.
+
+![Graphical abstract](../figures/graphical_abstract.png)
 
 **Graphical abstract.** The 24 nitrate wells of the network, the 0.0753 directions of a 150-dimensional porosity field they constrain, and the variance reduction the two design criteria achieve when the observation is a characterisation point instead.
 
@@ -469,11 +485,11 @@ The listings below are the complete pipeline, in the order it runs them. They ar
 | `fk_latex2omml.m` | 369 | `1c63f0bdb804d970` |
 | `fk_xmlesc.m` | 9 | `f33903379adb07d1` |
 | `fk_check_omml.m` | 48 | `0aaec357da997185` |
-| `fk_md2docx.m` | 305 | `0c7fb33ead18c453` |
+| `fk_md2docx.m` | 444 | `6028f47dc38df9cd` |
 | `fk_zip_replace.m` | 91 | `0f13f458e8c3562c` |
 | `fk_make_template.m` | 48 | `ee75001a80342d54` |
 | `fk_build_docx.m` | 96 | `492467fda49b3b09` |
-| `fk_verify_docx.m` | 150 | `afd10246b7fd16b2` |
+| `fk_verify_docx.m` | 174 | `ea67a358f81c7103` |
 | `fk_sha256.m` | 18 | `c475d86ff2bf570f` |
 | `run_all.m` | 65 | `86ba7b72db52e4f4` |
 
@@ -3825,13 +3841,15 @@ function fk_md2docx(mdtext, template, outfile)
 %
 %  Handles the subset of markdown the manuscript uses: YAML title and author,
 %  ATX headings, paragraphs, bullet and numbered lists, pipe tables, fenced
-%  code blocks, bold and code spans, and inline and display mathematics, the
-%  last through fk_latex2omml.
+%  code blocks, bold, italic and code spans, images, and inline and display
+%  mathematics, the last through fk_latex2omml.
 %
-%  The template supplies every part of the package except word/document.xml:
-%  styles, numbering, theme, fonts, section setup.  Only the body is written
-%  here, which is the same discipline used elsewhere in this project for
-%  editing a Word file without rebuilding it.
+%  The template supplies every part of the package except the ones written
+%  here: styles, numbering, theme, fonts, section setup.  The body is
+%  written, the image parts are added, and the relationship and content-type
+%  parts are amended to declare them.  Everything else is carried across
+%  untouched, which is the discipline this project uses for editing a Word
+%  file rather than rebuilding it.
 %
 %  Anything the parser does not recognise raises an error.  Silently dropping
 %  a construct would produce a document that looks finished and is not.
@@ -3839,6 +3857,14 @@ function fk_md2docx(mdtext, template, outfile)
 W = ['xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'];
 M = ['xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"'];
 R = ['xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'];
+WP  = 'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"';
+A   = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"';
+PIC = 'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
+
+% Text width of the template's page, in EMU, so a figure is set to the
+% measure rather than to a guess.  One twip is 635 EMU.
+emu_width = local_textwidth(template);
+images = struct('path', {}, 'part', {}, 'rid', {}, 'cx', {}, 'cy', {}, 'alt', {});
 
 lines = regexp(mdtext, '\r?\n', 'split');
 n = numel(lines);
@@ -3908,6 +3934,16 @@ while i <= n
         continue
     end
 
+    % ---- image ------------------------------------------------------------
+    im = regexp(s, '^!\[([^\]]*)\]\(([^)]+)\)$', 'tokens', 'once');
+    if ~isempty(im)
+        [body{end+1}, images] = local_image(im{1}, im{2}, images, ...
+                                           emu_width, template); %#ok<AGROW>
+        i = i + 1;
+        after_heading = false;
+        continue
+    end
+
     % ---- heading ----------------------------------------------------------
     h = regexp(s, '^(#{1,6})\s+(.*)$', 'tokens', 'once');
     if ~isempty(h)
@@ -3952,6 +3988,7 @@ while i <= n
         s2 = strtrim(lines{i});
         if isempty(s2) || startsWith(s2, '|') || startsWith(s2, '#') || ...
            startsWith(s2, '- ') || startsWith(s2, '```') || ...
+           startsWith(s2, '![') || ...
            startsWith(s2, '$$') || ~isempty(regexp(s2, '^\d+\.\s', 'once'))
             break
         end
@@ -3964,14 +4001,132 @@ while i <= n
     after_heading = false;
 end
 
-% ---------------------------------------------------------- assemble part --
+% --------------------------------------------------------- assemble parts --
 sectPr = local_sectpr(template);
 xml = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' ...
-       '<w:document ' W ' ' M ' ' R '><w:body>' ...
+       '<w:document ' W ' ' M ' ' R ' ' WP ' ' A ' ' PIC '><w:body>' ...
        strjoin(body, '') sectPr '</w:body></w:document>'];
 
-fk_zip_replace(template, outfile, 'word/document.xml', xml);
-fprintf('[docx] %s written, %d block elements\n', outfile, numel(body));
+names = {'word/document.xml'};
+parts = {xml};
+if ~isempty(images)
+    names{end+1} = 'word/_rels/document.xml.rels';
+    parts{end+1} = local_rels(template, images);
+    names{end+1} = '[Content_Types].xml';
+    parts{end+1} = local_conttypes(template);
+    for k = 1:numel(images)
+        fid = fopen(images(k).path, 'r');
+        if fid < 0
+            error('fk_md2docx:image', 'cannot read %s', images(k).path);
+        end
+        names{end+1} = images(k).part; %#ok<AGROW>
+        parts{end+1} = fread(fid, inf, '*uint8')'; %#ok<AGROW>
+        fclose(fid);
+    end
+end
+
+fk_zip_write(template, outfile, names, parts);
+fprintf('[docx] %s written, %d block elements, %d figures embedded\n', ...
+        outfile, numel(body), numel(images));
+end
+
+% =========================================================================
+function [p, images] = local_image(alt, relpath, images, emu_width, template)
+%LOCAL_IMAGE  An inline picture, sized to the text measure, aspect preserved.
+here = fileparts(mfilename('fullpath'));
+path = relpath;
+if ~exist(path, 'file')
+    path = fullfile(here, relpath);
+end
+if ~exist(path, 'file')
+    path = fullfile(fileparts(template), relpath);
+end
+if ~exist(path, 'file')
+    error('fk_md2docx:missingimage', 'image not found: %s', relpath);
+end
+
+[pw, ph] = fk_png_size(path);
+cx = round(emu_width);
+cy = round(cx * ph / pw);
+
+k = numel(images) + 1;
+images(k).path = path;
+images(k).part = sprintf('word/media/image%d.png', k);
+images(k).rid  = sprintf('rIdFig%d', k);
+images(k).cx = cx;
+images(k).cy = cy;
+images(k).alt = alt;
+
+id = num2str(1000 + k);
+p = ['<w:p><w:pPr><w:pStyle w:val="Compact"/>' ...
+     '<w:jc w:val="center"/></w:pPr><w:r><w:drawing>' ...
+     '<wp:inline distT="0" distB="0" distL="0" distR="0">' ...
+     '<wp:extent cx="' num2str(cx) '" cy="' num2str(cy) '"/>' ...
+     '<wp:effectExtent l="0" t="0" r="0" b="0"/>' ...
+     '<wp:docPr id="' id '" name="Picture ' id '" descr="' ...
+     fk_xmlesc(alt) '"/>' ...
+     '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/>' ...
+     '</wp:cNvGraphicFramePr>' ...
+     '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/' ...
+     'drawingml/2006/picture"><pic:pic><pic:nvPicPr>' ...
+     '<pic:cNvPr id="' id '" name="Picture ' id '"/><pic:cNvPicPr/>' ...
+     '</pic:nvPicPr><pic:blipFill><a:blip r:embed="' images(k).rid '"/>' ...
+     '<a:stretch><a:fillRect/></a:stretch></pic:blipFill>' ...
+     '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' num2str(cx) ...
+     '" cy="' num2str(cy) '"/></a:xfrm>' ...
+     '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>' ...
+     '</pic:pic></a:graphicData></a:graphic></wp:inline>' ...
+     '</w:drawing></w:r></w:p>'];
+end
+
+% =========================================================================
+function w = local_textwidth(template)
+%LOCAL_TEXTWIDTH  Page width less the margins, in EMU.  One twip is 635 EMU.
+d = local_readpart(template, 'word/document.xml');
+pg = regexp(d, '<w:pgSz[^>]*w:w="(\d+)"', 'tokens', 'once');
+mg = regexp(d, '<w:pgMar[^>]*/>', 'match', 'once');
+l = regexp(mg, 'w:left="(\d+)"', 'tokens', 'once');
+r = regexp(mg, 'w:right="(\d+)"', 'tokens', 'once');
+if isempty(pg) || isempty(l) || isempty(r)
+    error('fk_md2docx:pagesize', 'cannot read the page setup');
+end
+twips = str2double(pg{1}) - str2double(l{1}) - str2double(r{1});
+w = twips * 635 * 0.98;              % a shade under the measure
+end
+
+% =========================================================================
+function x = local_rels(template, images)
+x = local_readpart(template, 'word/_rels/document.xml.rels');
+add = '';
+for k = 1:numel(images)
+    add = [add '<Relationship Id="' images(k).rid '" Type="http://' ...
+           'schemas.openxmlformats.org/officeDocument/2006/relationships/' ...
+           'image" Target="media/image' num2str(k) '.png"/>']; %#ok<AGROW>
+end
+x = strrep(x, '</Relationships>', [add '</Relationships>']);
+end
+
+% =========================================================================
+function x = local_conttypes(template)
+x = local_readpart(template, '[Content_Types].xml');
+if ~contains(x, 'Extension="png"')
+    % strrep would replace every occurrence, so insert once at the first
+    % Default element.
+    j = strfind(x, '<Default');
+    assert(~isempty(j), 'no Default element in [Content_Types].xml');
+    x = [x(1:j(1)-1) ...
+         '<Default Extension="png" ContentType="image/png"/>' ...
+         x(j(1):end)];
+end
+end
+
+% =========================================================================
+function t = local_readpart(zipfile, partname)
+tmp = tempname;
+mkdir(tmp);
+c = onCleanup(@() rmdir(tmp, 's')); %#ok<NASGU>
+unzip(zipfile, tmp);
+t = fileread(fullfile(tmp, strrep(partname, '/', filesep)));
 end
 
 % =========================================================================
@@ -4390,6 +4545,9 @@ function fk_verify_docx(docx)
 %    5. No stray dollar sign, which is what an unconverted equation leaves.
 %    6. Every listing in the appendix matches the file on disk, compared by
 %       the SHA-256 prefix printed beside it.
+%    7. Every figure caption has a picture above it.  This check exists
+%       because the first builds carried the captions and none of the
+%       figures, and nothing in the document said so.
 
 if nargin < 1
     cfg = fk_config();
@@ -4480,6 +4638,19 @@ if nchk == 0
     fails{end+1} = 'no listing checksums found';
 end
 
+% ---- 7. figures present ---------------------------------------------------
+raw = local_rawxml(docx);
+nimg = numel(strfind(raw, '<w:drawing>'));
+ncap = sum(cellfun(@(t) ~isempty(regexp(strtrim(t), ...
+           '^(Figure \d+\.|Graphical abstract\.)', 'once')), paras));
+fprintf('[verify] %d figures embedded, %d captions\n', nimg, ncap);
+if ncap == 0
+    fails{end+1} = 'no figure captions found';
+elseif nimg < ncap
+    fails{end+1} = sprintf('%d captions but only %d figures embedded', ...
+                           ncap, nimg);
+end
+
 % ---- report ---------------------------------------------------------------
 if ~isempty(fails)
     fprintf('\n[verify] FAILED\n');
@@ -4514,6 +4685,14 @@ for k = 1:numel(pieces)
     if isempty(st), styles{k} = ''; else, styles{k} = st{1}; end
 end
 text = strjoin(paras, newline);
+end
+
+function x = local_rawxml(docx)
+tmp = tempname;
+mkdir(tmp);
+c = onCleanup(@() rmdir(tmp, 's')); %#ok<NASGU>
+unzip(docx, tmp);
+x = fileread(fullfile(tmp, 'word', 'document.xml'));
 end
 
 function s = local_unesc(s)
